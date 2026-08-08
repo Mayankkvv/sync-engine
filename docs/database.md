@@ -26,3 +26,9 @@ Created by backend/models/Document.js. Fields:
 - createdAt, updatedAt (added automatically by Mongoose timestamps)
 
 No user/owner field yet — that gets added once authentication exists.
+
+### documents (updated)
+Added a "characters" field: an array of subdocuments, each shaped
+{ id, char, afterId, deleted }, representing the document as a CRDT
+character list. "content" is kept as a plain-text mirror, always
+regenerated from "characters" — never edited directly anymore.

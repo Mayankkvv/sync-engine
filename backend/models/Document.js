@@ -1,5 +1,15 @@
 const mongoose = require("mongoose");
 
+const characterSchema = new mongoose.Schema(
+  {
+    id: { type: String, required: true },
+    char: { type: String, required: true },
+    afterId: { type: String, default: null },
+    deleted: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
 const documentSchema = new mongoose.Schema(
   {
     title: {
@@ -9,6 +19,10 @@ const documentSchema = new mongoose.Schema(
     content: {
       type: String,
       default: "",
+    },
+    characters: {
+      type: [characterSchema],
+      default: [],
     },
   },
   {

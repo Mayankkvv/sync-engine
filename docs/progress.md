@@ -63,14 +63,9 @@ ids. Proved convergence with a standalone test script simulating two
 replicas applying the same conflicting operations in different orders.
 Not yet wired into the live editor.
 
-## Current Milestone
-A working, tested CRDT exists standalone (backend/crdt/crdt.js), proven
-to converge regardless of operation order. The live editor still uses
-Step 10's simpler position-based operations.
-
-## Next Milestone
-To be planned in the next step.
-
-## Remaining Work
-Wire the CRDT into the live editor (replacing position-based ops),
-offline sync, version history, presence, testing, deployment.
+## Step 12: CRDT Wired Into the Live Editor
+Replaced position-based operations with the CRDT from Step 11. Documents
+now store a "characters" array (id, char, afterId, deleted) in MongoDB
+instead of relying on plain-text positions. Each browser tab generates
+its own unique ids and sends real insert/delete CRDT operations over
+WebSocket. Confirmed working with concurrent typing in two tabs.

@@ -35,7 +35,9 @@ rule (larger id goes first) puts them in the same final order every
 time — proven in backend/testCRDT.js.
 
 ## Current status
-The CRDT logic exists and is proven correct with a standalone test
-script (testCRDT.js). It is not yet connected to the live editor —
-Step 10's simpler position-based operations are still what's running
-in the app. The next step replaces that with this CRDT.
+The CRDT is now fully wired into the live editor. Documents store a
+"characters" array in MongoDB (id, char, afterId, deleted) instead of
+relying on plain-text positions. Each browser tab generates its own
+unique ids (siteId + local counter) and sends real insert/delete
+operations over WebSocket, applied identically on both the sending
+client, the server, and every other connected client.

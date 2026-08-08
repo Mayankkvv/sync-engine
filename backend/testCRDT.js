@@ -1,49 +1,54 @@
-const { createState, insertOperation, localInsert, deleteOperation, toText } = require("./crdt/crdt");
+const { insertOperation, deleteOperation, toText } = require("./crdt/crdt");
 
 function testConcurrentInsertConvergence() {
-  const replicaA = createState("A");
-  const replicaB = createState("B");
+  const charactersA = [];
+  const charactersB = [];
 
-  const opH = localInsert(replicaA, null, "H");
-  const opI = localInsert(replicaA, opH.id, "i");
+  const opH = { id: "A-1", char: "H", afterId: null, deleted: false };
+  const opI = { id: "A-2", char: "i", afterId: "A-1", deleted: false };
 
-  insertOperation(replicaB, opH);
-  insertOperation(replicaB, opI);
+  insertOperation(charactersA, opH);
+  insertOperation(charactersA, opI);
+  insertOperation(charactersB, opH);
+  insertOperation(charactersB, opI);
 
-  const opBang = localInsert(replicaA, opI.id, "!");
-  const opQuestion = { id: "B-1", char: "?", afterId: opI.id, deleted: false };
+  const opBang = { id: "A-3", char: "!", afterId: "A-2", deleted: false };
+  const opQuestion = { id: "B-1", char: "?", afterId: "A-2", deleted: false };
 
-  insertOperation(replicaA, opQuestion);
+  insertOperation(charactersA, opBang);
+  insertOperation(charactersA, opQuestion);
 
-  insertOperation(replicaB, opQuestion);
-  insertOperation(replicaB, opBang);
+  insertOperation(charactersB, opQuestion);
+  insertOperation(charactersB, opBang);
 
-  console.log("Replica A (order: !, then ?):", toText(replicaA));
-  console.log("Replica B (order: ?, then !):", toText(replicaB));
-  console.log("Converged:", toText(replicaA) === toText(replicaB));
+  console.log("Replica A (order: !, then ?):", toText(charactersA));
+  console.log("Replica B (order: ?, then !):", toText(charactersB));
+  console.log("Converged:", toText(charactersA) === toText(charactersB));
 }
 
 function testDeleteInsertRace() {
-  const replicaA = createState("A");
-  const replicaB = createState("B");
+  const charactersA = [];
+  const charactersB = [];
 
-  const opH = localInsert(replicaA, null, "H");
-  const opI = localInsert(replicaA, opH.id, "i");
-  const opBang = localInsert(replicaA, opI.id, "!");
+  const opH = { id: "A-1", char: "H", afterId: null, deleted: false };
+  const opI = { id: "A-2", char: "i", afterId: "A-1", deleted: false };
+  const opBang = { id: "A-3", char: "!", afterId: "A-2", deleted: false };
 
   for (const op of [opH, opI, opBang]) {
-    insertOperation(replicaB, op);
+    insertOperation(charactersA, op);
+    insertOperation(charactersB, op);
   }
 
-  deleteOperation(replicaA, opBang.id);
-  const opQuestion = localInsert(replicaA, opBang.id, "?");
+  deleteOperation(charactersA, opBang.id);
+  const opQuestion = { id: "A-4", char: "?", afterId: opBang.id, deleted: false };
+  insertOperation(charactersA, opQuestion);
 
-  insertOperation(replicaB, opQuestion);
-  deleteOperation(replicaB, opBang.id);
+  insertOperation(charactersB, opQuestion);
+  deleteOperation(charactersB, opBang.id);
 
-  console.log("Replica A (delete, then insert):", toText(replicaA));
-  console.log("Replica B (insert, then delete):", toText(replicaB));
-  console.log("Converged:", toText(replicaA) === toText(replicaB));
+  console.log("Replica A (delete, then insert):", toText(charactersA));
+  console.log("Replica B (insert, then delete):", toText(charactersB));
+  console.log("Converged:", toText(charactersA) === toText(charactersB));
 }
 
 testConcurrentInsertConvergence();

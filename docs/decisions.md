@@ -42,3 +42,9 @@ against each other — any replica can apply operations in any order and
 still converge. We also avoided existing CRDT libraries (Yjs, Automerge)
 on purpose, since the goal of this project is to understand exactly how
 conflict resolution works, not to depend on one that hides it.
+
+## document.markModified("characters") after mutating it
+Mongoose generally detects array changes automatically, but explicitly
+marking the field modified before save() is a small safeguard against
+a subtle class of bug where in-memory changes look correct but don't
+actually persist. Cheap to add, and removes any doubt.

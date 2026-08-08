@@ -33,3 +33,11 @@ the edit.
   N, "deleteCount": N, "insertText": "..."}} — replaces the old "edit"
   message type. Carries only the changed portion of the document, not
   the full content.
+
+## Message protocol (updated)
+- {"type": "crdtOps", "documentId": "...", "operations": [...]} —
+  replaces "operation". Each item in "operations" is either
+  { kind: "insert", character: {id, char, afterId, deleted} } or
+  { kind: "delete", id }. Applied identically on sender, server, and
+  every other connected client using the same insertOperation /
+  deleteOperation functions.

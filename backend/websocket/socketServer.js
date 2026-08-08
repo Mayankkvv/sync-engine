@@ -1,8 +1,9 @@
 const { WebSocketServer } = require("ws");
 const Document = require("../models/Document");
-const applyOperation = require("../utils/applyOperation");
+const { insertOperation, deleteOperation, toText } = require("../crdt/crdt");
 
 const rooms = new Map();
+const documentQueues = new Map();
 
 function joinRoom(documentId, ws) {
   if (!rooms.has(documentId)) {
@@ -36,6 +37,20 @@ function broadcastToRoom(documentId, message, excludeWs) {
   }
 }
 
+function queueForDocument(documentId, task) {
+  const previous = documentQueues.get(documentId) || Promise.resolve();
+
+  const next = previous
+    .catch(() => {})
+    .then(task)
+    .catch((error) => {
+      console.error(`Error processing operation for document ${documentId}:`, error.message);
+    });
+
+  documentQueues.set(documentId, next);
+  return next;
+}
+
 function setupWebSocket(server) {
   const wss = new WebSocketServer({ server });
 
@@ -44,7 +59,7 @@ function setupWebSocket(server) {
 
     ws.send(JSON.stringify({ type: "welcome", message: "Connected to Sync Engine" }));
 
-    ws.on("message", async (data) => {
+    ws.on("message", (data) => {
       let parsed;
 
       try {
@@ -59,16 +74,27 @@ function setupWebSocket(server) {
         console.log(`Client joined document ${parsed.documentId}`);
       }
 
-      if (parsed.type === "operation") {
-        const { documentId, operation } = parsed;
+      if (parsed.type === "crdtOps") {
+        const { documentId, operations } = parsed;
 
-        const document = await Document.findById(documentId);
-        if (!document) return;
+        queueForDocument(documentId, async () => {
+          const document = await Document.findById(documentId);
+          if (!document) return;
 
-        document.content = applyOperation(document.content, operation);
-        await document.save();
+          for (const op of operations) {
+            if (op.kind === "insert") {
+              insertOperation(document.characters, op.character);
+            } else if (op.kind === "delete") {
+              deleteOperation(document.characters, op.id);
+            }
+          }
 
-        broadcastToRoom(documentId, { type: "operation", documentId, operation }, ws);
+          document.content = toText(document.characters);
+          document.markModified("characters");
+          await document.save();
+
+          broadcastToRoom(documentId, { type: "crdtOps", documentId, operations }, ws);
+        });
       }
     });
 
