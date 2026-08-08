@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { computeOperation, applyOperation } from "./utils/diff";
+import { computeOperation } from "./utils/diff";
+import { insertOperation, deleteOperation, toText, visibleIdAt } from "./utils/crdt";
 
 const API_URL = "http://localhost:5000/api/documents";
 const WS_URL = "ws://localhost:5000";
@@ -8,8 +9,16 @@ function App() {
   const [documentId, setDocumentId] = useState(null);
   const [content, setContent] = useState("");
   const [status, setStatus] = useState("Loading...");
+
   const socketRef = useRef(null);
-  const prevContentRef = useRef("");
+  const charactersRef = useRef([]);
+  const siteIdRef = useRef(crypto.randomUUID());
+  const counterRef = useRef(0);
+
+  function nextId() {
+    counterRef.current++;
+    return `${siteIdRef.current}-${counterRef.current}`;
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -32,9 +41,9 @@ function App() {
 
       if (cancelled) return;
 
+      charactersRef.current = doc.characters || [];
       setDocumentId(doc._id);
-      setContent(doc.content);
-      prevContentRef.current = doc.content;
+      setContent(toText(charactersRef.current));
 
       const socket = new WebSocket(WS_URL);
       socketRef.current = socket;
@@ -46,12 +55,15 @@ function App() {
 
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === "operation") {
-          setContent((prev) => {
-            const updated = applyOperation(prev, data.operation);
-            prevContentRef.current = updated;
-            return updated;
-          });
+        if (data.type === "crdtOps") {
+          for (const op of data.operations) {
+            if (op.kind === "insert") {
+              insertOperation(charactersRef.current, op.character);
+            } else if (op.kind === "delete") {
+              deleteOperation(charactersRef.current, op.id);
+            }
+          }
+          setContent(toText(charactersRef.current));
         }
       };
 
@@ -72,15 +84,34 @@ function App() {
   }, []);
 
   function handleChange(e) {
-    const newContent = e.target.value;
-    const operation = computeOperation(prevContentRef.current, newContent);
+    const newText = e.target.value;
+    const oldText = toText(charactersRef.current);
+    const diff = computeOperation(oldText, newText);
+    const outgoingOps = [];
 
-    prevContentRef.current = newContent;
-    setContent(newContent);
+    for (let i = 0; i < diff.deleteCount; i++) {
+      const id = visibleIdAt(charactersRef.current, diff.position);
+      if (id) {
+        deleteOperation(charactersRef.current, id);
+        outgoingOps.push({ kind: "delete", id });
+      }
+    }
+
+    let afterId =
+      diff.position === 0 ? null : visibleIdAt(charactersRef.current, diff.position - 1);
+
+    for (const char of diff.insertText) {
+      const character = { id: nextId(), char, afterId, deleted: false };
+      insertOperation(charactersRef.current, character);
+      outgoingOps.push({ kind: "insert", character });
+      afterId = character.id;
+    }
+
+    setContent(toText(charactersRef.current));
 
     const socket = socketRef.current;
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ type: "operation", documentId, operation }));
+    if (socket && socket.readyState === WebSocket.OPEN && outgoingOps.length > 0) {
+      socket.send(JSON.stringify({ type: "crdtOps", documentId, operations: outgoingOps }));
     }
   }
 
