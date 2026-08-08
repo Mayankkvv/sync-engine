@@ -27,3 +27,9 @@ Newer Tailwind versions install as a dedicated Vite plugin
 (@tailwindcss/vite) rather than generating a tailwind.config.js and
 running a separate build step. It's simpler and is now the standard,
 current approach — used here instead of older tutorials' method.
+
+## Hand-written prefix/suffix diffing instead of a diff library
+Libraries like diff-match-patch exist for this, but writing the
+prefix/suffix comparison by hand keeps the logic fully understood and
+produces operations in exactly the {position, deleteCount, insertText}
+shape the CRDT step will need — no translation layer required.

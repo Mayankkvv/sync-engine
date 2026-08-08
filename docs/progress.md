@@ -49,15 +49,22 @@ joins its room over WebSocket, and syncs edits live between browser
 tabs. Added CORS to the backend so the frontend (port 5173) can reach
 it (port 5000). Confirmed working with two tabs syncing in real time.
 
+### Step 10: Operation-Based Editing
+Replaced whole-document syncing with a diffing algorithm that computes
+a single operation (position, deleteCount, insertText) representing
+exactly what changed. Both the client-to-server and server-to-client
+messages now carry operations instead of full document content.
+
 ## Current Milestone
-Full end-to-end live collaboration works through the real UI: open two
-tabs, type in either, see it sync instantly. Still sends the whole
-document on every keystroke — no operations, no CRDT, no conflict
-handling for simultaneous edits yet.
+Editing is now operation-based end to end — only the actual change is
+sent over the wire, in both directions. Known limitation: truly
+simultaneous edits from two people can still race against each other
+in the database, since operations are applied one at a time with no
+conflict resolution yet.
 
 ## Next Milestone
 To be planned in the next step.
 
 ## Remaining Work
-Operation-based editing, custom CRDT, offline sync, version history,
-presence, testing, deployment.
+Custom CRDT for concurrent-edit conflict resolution, offline sync,
+version history, presence, testing, deployment.

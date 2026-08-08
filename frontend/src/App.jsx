@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { computeOperation, applyOperation } from "./utils/diff";
 
 const API_URL = "http://localhost:5000/api/documents";
 const WS_URL = "ws://localhost:5000";
@@ -8,9 +9,12 @@ function App() {
   const [content, setContent] = useState("");
   const [status, setStatus] = useState("Loading...");
   const socketRef = useRef(null);
+  const prevContentRef = useRef("");
 
   useEffect(() => {
-    async function loadDocument() {
+    let cancelled = false;
+
+    async function init() {
       const res = await fetch(API_URL);
       const documents = await res.json();
 
@@ -26,42 +30,57 @@ function App() {
         doc = await createRes.json();
       }
 
+      if (cancelled) return;
+
       setDocumentId(doc._id);
       setContent(doc.content);
-      connectSocket(doc._id);
+      prevContentRef.current = doc.content;
+
+      const socket = new WebSocket(WS_URL);
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        setStatus("Connected");
+        socket.send(JSON.stringify({ type: "join", documentId: doc._id }));
+      };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === "operation") {
+          setContent((prev) => {
+            const updated = applyOperation(prev, data.operation);
+            prevContentRef.current = updated;
+            return updated;
+          });
+        }
+      };
+
+      socket.onclose = () => {
+        setStatus("Disconnected");
+      };
     }
 
-    loadDocument();
-  }, []);
+    init();
 
-  function connectSocket(id) {
-    const socket = new WebSocket(WS_URL);
-    socketRef.current = socket;
-
-    socket.onopen = () => {
-      setStatus("Connected");
-      socket.send(JSON.stringify({ type: "join", documentId: id }));
-    };
-
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "update") {
-        setContent(data.content);
+    return () => {
+      cancelled = true;
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
       }
     };
-
-    socket.onclose = () => {
-      setStatus("Disconnected");
-    };
-  }
+  }, []);
 
   function handleChange(e) {
     const newContent = e.target.value;
+    const operation = computeOperation(prevContentRef.current, newContent);
+
+    prevContentRef.current = newContent;
     setContent(newContent);
 
     const socket = socketRef.current;
     if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ type: "edit", documentId, content: newContent }));
+      socket.send(JSON.stringify({ type: "operation", documentId, operation }));
     }
   }
 

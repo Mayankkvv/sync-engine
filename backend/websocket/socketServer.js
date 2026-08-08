@@ -1,5 +1,6 @@
 const { WebSocketServer } = require("ws");
 const Document = require("../models/Document");
+const applyOperation = require("../utils/applyOperation");
 
 const rooms = new Map();
 
@@ -58,12 +59,16 @@ function setupWebSocket(server) {
         console.log(`Client joined document ${parsed.documentId}`);
       }
 
-      if (parsed.type === "edit") {
-        const { documentId, content } = parsed;
+      if (parsed.type === "operation") {
+        const { documentId, operation } = parsed;
 
-        await Document.findByIdAndUpdate(documentId, { content });
+        const document = await Document.findById(documentId);
+        if (!document) return;
 
-        broadcastToRoom(documentId, { type: "update", documentId, content }, ws);
+        document.content = applyOperation(document.content, operation);
+        await document.save();
+
+        broadcastToRoom(documentId, { type: "operation", documentId, operation }, ws);
       }
     });
 

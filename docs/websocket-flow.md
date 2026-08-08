@@ -26,3 +26,10 @@ clients. Joining adds a client to the right set; disconnecting removes
 them and deletes the room if it's now empty. Broadcasting loops through
 a room's clients and sends the update to everyone except whoever sent
 the edit.
+
+## Message protocol (updated)
+- {"type": "join", "documentId": "..."} — unchanged
+- {"type": "operation", "documentId": "...", "operation": {"position":
+  N, "deleteCount": N, "insertText": "..."}} — replaces the old "edit"
+  message type. Carries only the changed portion of the document, not
+  the full content.
