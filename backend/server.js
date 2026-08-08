@@ -1,7 +1,9 @@
 require("dotenv").config();
 const express = require("express");
+const http = require("http");
 const connectDB = require("./config/db");
 const documentRoutes = require("./routes/documentRoutes");
+const setupWebSocket = require("./websocket/socketServer");
 
 connectDB();
 
@@ -16,6 +18,10 @@ app.get("/", (req, res) => {
 
 app.use("/api/documents", documentRoutes);
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+
+setupWebSocket(server);
+
+server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
