@@ -33,3 +33,12 @@ Libraries like diff-match-patch exist for this, but writing the
 prefix/suffix comparison by hand keeps the logic fully understood and
 produces operations in exactly the {position, deleteCount, insertText}
 shape the CRDT step will need — no translation layer required.
+
+## RGA-style CRDT instead of Operational Transformation or a library
+We chose a hand-written RGA-style design (unique id + "inserted after"
+reference + tombstone) over Operational Transformation because it
+doesn't require a central server to transform conflicting operations
+against each other — any replica can apply operations in any order and
+still converge. We also avoided existing CRDT libraries (Yjs, Automerge)
+on purpose, since the goal of this project is to understand exactly how
+conflict resolution works, not to depend on one that hides it.

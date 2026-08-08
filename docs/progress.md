@@ -55,16 +55,22 @@ a single operation (position, deleteCount, insertText) representing
 exactly what changed. Both the client-to-server and server-to-client
 messages now carry operations instead of full document content.
 
+## Step 11: Custom CRDT (standalone)
+Built a hand-written CRDT from scratch: each character has a unique
+id, a reference to what it was inserted after, and a tombstone for
+deletion. Concurrent inserts at the same spot are ordered by comparing
+ids. Proved convergence with a standalone test script simulating two
+replicas applying the same conflicting operations in different orders.
+Not yet wired into the live editor.
+
 ## Current Milestone
-Editing is now operation-based end to end — only the actual change is
-sent over the wire, in both directions. Known limitation: truly
-simultaneous edits from two people can still race against each other
-in the database, since operations are applied one at a time with no
-conflict resolution yet.
+A working, tested CRDT exists standalone (backend/crdt/crdt.js), proven
+to converge regardless of operation order. The live editor still uses
+Step 10's simpler position-based operations.
 
 ## Next Milestone
 To be planned in the next step.
 
 ## Remaining Work
-Custom CRDT for concurrent-edit conflict resolution, offline sync,
-version history, presence, testing, deployment.
+Wire the CRDT into the live editor (replacing position-based ops),
+offline sync, version history, presence, testing, deployment.
