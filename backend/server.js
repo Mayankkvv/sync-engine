@@ -1,7 +1,3 @@
-//http://localhost:${PORT}
-const dns = require('dns');
-dns.setServers(['8.8.8.8', '8.8.4.4']);
-
 require("dotenv").config();
 const express = require("express");
 const connectDB = require("./config/db");
@@ -16,5 +12,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
