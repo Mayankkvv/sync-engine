@@ -110,4 +110,4 @@ function setupWebSocket(server) {
   return wss;
 }
 
-module.exports = setupWebSocket;
+module.exports = { setupWebSocket, queueForDocument, broadcastToRoom };

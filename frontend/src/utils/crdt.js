@@ -34,6 +34,13 @@ export function deleteOperation(characters, id) {
   }
 }
 
+export function undeleteOperation(characters, id) {
+  const target = characters.find((c) => c.id === id);
+  if (target) {
+    target.deleted = false;
+  }
+}
+
 export function toText(characters) {
   return characters
     .filter((c) => !c.deleted)

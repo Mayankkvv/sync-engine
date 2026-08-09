@@ -41,3 +41,9 @@ relying on plain-text positions. Each browser tab generates its own
 unique ids (siteId + local counter) and sends real insert/delete
 operations over WebSocket, applied identically on both the sending
 client, the server, and every other connected client.
+
+## Undelete operation (added for version restore)
+Restoring to a past version sometimes needs to bring back a character
+that's since been deleted. Since tombstoned characters are never
+actually removed from the list, "undelete" just flips deleted back to
+false — the exact mirror of delete, and just as simple.

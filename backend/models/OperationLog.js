@@ -12,7 +12,7 @@ const characterSchema = new mongoose.Schema(
 
 const operationSchema = new mongoose.Schema(
   {
-    kind: { type: String, enum: ["insert", "delete"], required: true },
+    kind: { type: String, enum: ["insert", "delete", "undelete"], required: true },
     character: characterSchema,
     id: String,
   },

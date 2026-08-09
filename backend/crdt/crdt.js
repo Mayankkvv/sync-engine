@@ -34,6 +34,13 @@ function deleteOperation(characters, id) {
   }
 }
 
+function undeleteOperation(characters, id) {
+  const target = characters.find((c) => c.id === id);
+  if (target) {
+    target.deleted = false;
+  }
+}
+
 function toText(characters) {
   return characters
     .filter((c) => !c.deleted)
@@ -41,4 +48,28 @@ function toText(characters) {
     .join("");
 }
 
-module.exports = { insertOperation, deleteOperation, toText };
+function replayOperations(operationBatches) {
+  const characters = [];
+
+  for (const batch of operationBatches) {
+    for (const op of batch) {
+      if (op.kind === "insert") {
+        insertOperation(characters, op.character);
+      } else if (op.kind === "delete") {
+        deleteOperation(characters, op.id);
+      } else if (op.kind === "undelete") {
+        undeleteOperation(characters, op.id);
+      }
+    }
+  }
+
+  return characters;
+}
+
+module.exports = {
+  insertOperation,
+  deleteOperation,
+  undeleteOperation,
+  toText,
+  replayOperations,
+};

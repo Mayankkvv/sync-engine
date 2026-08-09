@@ -76,3 +76,27 @@ feature here — because edits are already CRDT operations, logging them
 verbatim as they happen gives me a true event-sourced history for
 free, instead of needing a separate snapshotting system."
 
+## Version history and restore via event replay
+
+**What it is:** any past state of a document can be viewed or restored
+to, purely by replaying its operation log — no separate snapshot
+system.
+
+**Why we built it:** this is the actual payoff of event sourcing —
+because every edit was already logged in Step 14, "what did this look
+like an hour ago" is just a replay, and "go back to that" is just a
+diff against the current state.
+
+**How it works:** reconstruct the target state by replaying logged
+operations up to a timestamp. Compare it to the live document
+character-by-character; anything that should be deleted now but isn't
+gets deleted, anything that should be visible now but is tombstoned
+gets undeleted. That diff is applied, saved, logged as a new event, and
+broadcast live — restoring is just another operation, not a special
+case.
+
+**How to explain it in an interview:** "Restore isn't a snapshot
+rollback — it's computed as a real diff and logged like any other
+edit, so the history stays complete and truthful even after a
+restore, and every connected client sees it happen live through the
+same WebSocket broadcast path as a normal keystroke."

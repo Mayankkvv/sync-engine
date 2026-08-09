@@ -4,7 +4,7 @@ const http = require("http");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const documentRoutes = require("./routes/documentRoutes");
-const setupWebSocket = require("./websocket/socketServer");
+const { setupWebSocket } = require("./websocket/socketServer");
 
 connectDB();
 

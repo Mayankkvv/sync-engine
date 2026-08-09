@@ -1,6 +1,9 @@
 const express = require("express");
 const Document = require("../models/Document");
 const OperationLog = require("../models/OperationLog");
+const reconstructAsOf = require("../services/reconstructDocument");
+const { toText, deleteOperation, undeleteOperation } = require("../crdt/crdt");
+const { queueForDocument, broadcastToRoom } = require("../websocket/socketServer");
 
 const router = express.Router();
 
@@ -39,6 +42,78 @@ router.get("/:id/history", async (req, res) => {
   try {
     const logs = await OperationLog.find({ documentId: req.params.id }).sort({ createdAt: 1 });
     res.json(logs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/:id/version/:logId", async (req, res) => {
+  try {
+    const log = await OperationLog.findById(req.params.logId);
+    if (!log || log.documentId.toString() !== req.params.id) {
+      return res.status(404).json({ error: "Version not found" });
+    }
+
+    const characters = await reconstructAsOf(req.params.id, log.createdAt);
+
+    res.json({ content: toText(characters), createdAt: log.createdAt });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/:id/restore/:logId", async (req, res) => {
+  try {
+    const log = await OperationLog.findById(req.params.logId);
+    if (!log || log.documentId.toString() !== req.params.id) {
+      return res.status(404).json({ error: "Version not found" });
+    }
+
+    const documentId = req.params.id;
+
+    const result = await queueForDocument(documentId, async () => {
+      const targetCharacters = await reconstructAsOf(documentId, log.createdAt);
+      const targetDeletedMap = new Map(targetCharacters.map((c) => [c.id, c.deleted]));
+
+      const document = await Document.findById(documentId);
+      if (!document) return null;
+
+      const restoreOps = [];
+
+      for (const character of document.characters) {
+        const targetDeleted = targetDeletedMap.has(character.id)
+          ? targetDeletedMap.get(character.id)
+          : true;
+
+        if (character.deleted !== targetDeleted) {
+          if (targetDeleted) {
+            deleteOperation(document.characters, character.id);
+            restoreOps.push({ kind: "delete", id: character.id });
+          } else {
+            undeleteOperation(document.characters, character.id);
+            restoreOps.push({ kind: "undelete", id: character.id });
+          }
+        }
+      }
+
+      if (restoreOps.length > 0) {
+        document.content = toText(document.characters);
+        document.markModified("characters");
+        await document.save();
+
+        await OperationLog.create({ documentId, operations: restoreOps });
+
+        broadcastToRoom(documentId, { type: "crdtOps", documentId, operations: restoreOps }, null);
+      }
+
+      return document;
+    });
+
+    if (!result) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

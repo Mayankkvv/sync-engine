@@ -25,3 +25,16 @@ Response: { "message": "Document deleted" }, or 404 if not found.
 ## GET /api/documents/:id/history
 Returns every logged operation batch for a document, oldest first.
 Response: an array of { documentId, operations, createdAt }.
+
+## GET /api/documents/:id/version/:logId
+Previews the document as it looked at a given point in history
+(replays the log up to that entry's timestamp). Does not change
+anything.
+Response: { content, createdAt }
+
+## POST /api/documents/:id/restore/:logId
+Restores the document to how it looked at a given point in history.
+Computed as a real diff against the current state (delete/undelete
+operations), saved, logged as a new history entry, and broadcast live
+to every connected client viewing the document.
+Response: the updated document.

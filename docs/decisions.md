@@ -55,3 +55,13 @@ inside the Document itself, means the document stays small and fast to
 load for normal editing, while the (potentially very large) history
 only gets queried when someone actually wants to view or restore a
 past version.
+
+
+## Restore as a computed diff, not an overwrite
+Restoring could have just replaced the live document's characters with
+the old reconstructed array. Instead we compute the minimal set of
+delete/undelete operations needed to get there, and log that as a real
+event. This keeps every state change — including restores — visible
+in the history, consistent with event sourcing, and means the restore
+broadcasts as normal small operations instead of a full document
+replacement.

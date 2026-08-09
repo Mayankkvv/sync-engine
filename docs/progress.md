@@ -84,3 +84,12 @@ Added an OperationLog model that permanently records every batch of
 CRDT operations applied to a document, in order, separate from the
 document's current state. Added GET /api/documents/:id/history to
 view the raw log. Nothing restores from it yet — that's next.
+
+## Step 15: Version Preview and Live Restore
+Added GET /:id/version/:logId to preview the document as it looked at
+any past point (via replaying the operation log), and POST
+/:id/restore/:logId to actually restore it — computed as a real diff
+(delete/undelete operations) against the current state, logged as a
+new event, and broadcast live to every connected tab. Added an
+"undelete" operation to the CRDT to support restoring previously
+deleted characters.

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { computeOperation } from "./utils/diff";
-import { insertOperation, deleteOperation, toText, visibleIdAt } from "./utils/crdt";
+import { insertOperation, deleteOperation, undeleteOperation, toText, visibleIdAt } from "./utils/crdt";
 
 const API_URL = "http://localhost:5000/api/documents";
 const WS_URL = "ws://localhost:5000";
@@ -70,6 +70,8 @@ function App() {
               insertOperation(charactersRef.current, op.character);
             } else if (op.kind === "delete") {
               deleteOperation(charactersRef.current, op.id);
+            } else if (op.kind === "undelete") {
+              undeleteOperation(charactersRef.current, op.id);
             }
           }
           setContent(toText(charactersRef.current));
