@@ -41,3 +41,16 @@ the edit.
   { kind: "delete", id }. Applied identically on sender, server, and
   every other connected client using the same insertOperation /
   deleteOperation functions.
+
+
+## Reconnection and offline sync
+If the WebSocket closes unexpectedly, the client sets status to
+"Disconnected — retrying..." and attempts a new connection every 2
+seconds. Any edits made while disconnected are held in a local queue
+instead of being sent. When a new connection successfully opens, the
+client: 1) rejoins the document's room, 2) fetches the current document
+over REST (catching up on anything missed while offline), 3) replays
+its queued local operations on top of that fresh state, then 4) sends
+those operations to the server. Because CRDT operations reference
+stable character ids rather than positions, they merge correctly even
+though the document changed while the client was disconnected.

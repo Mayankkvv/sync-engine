@@ -31,3 +31,26 @@ box. I proved it converges with a test that applies the same
 conflicting operations in different orders on two simulated replicas
 and checks they produce identical results."
 
+
+## Offline editing with auto-reconnect
+
+**What it is:** the editor keeps working with no network connection,
+queuing edits locally, and automatically catches up and merges once
+reconnected.
+
+**Why we built it:** a real collaborative editor has to tolerate flaky
+networks — losing edits or freezing the UI on disconnect isn't
+acceptable.
+
+**How it works:** on disconnect, new edits go into a local queue instead
+of being sent, and the client retries connecting every 2 seconds. On
+reconnect, it fetches the authoritative current document, replays its
+queued edits on top of it, and sends them to the server — a real merge,
+not just a resend, made possible by the CRDT's stable per-character ids.
+
+**How to explain it in an interview:** "I simulated real network drops
+using per-tab DevTools throttling, not just closing a tab, to prove
+edits made fully offline correctly merge with edits made elsewhere
+during the same window — which only works because the CRDT operations
+reference stable ids instead of shifting text positions."
+

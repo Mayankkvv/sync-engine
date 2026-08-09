@@ -69,3 +69,11 @@ now store a "characters" array (id, char, afterId, deleted) in MongoDB
 instead of relying on plain-text positions. Each browser tab generates
 its own unique ids and sends real insert/delete CRDT operations over
 WebSocket. Confirmed working with concurrent typing in two tabs.
+
+## Step 13: Offline Editing and Auto-Reconnect
+Edits made while disconnected now queue locally instead of being lost.
+The frontend automatically retries the WebSocket connection every 2
+seconds on disconnect. On reconnect, it fetches the latest document,
+merges any locally-queued offline operations on top of it using the
+CRDT, and sends them to the server. Tested with real per-tab network
+throttling simulating one user going offline while another kept editing.

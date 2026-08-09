@@ -12,6 +12,8 @@ function App() {
 
   const socketRef = useRef(null);
   const charactersRef = useRef([]);
+  const pendingOpsRef = useRef([]);
+  const reconnectTimeoutRef = useRef(null);
   const siteIdRef = useRef(crypto.randomUUID());
   const counterRef = useRef(0);
 
@@ -22,6 +24,64 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
+
+    function connect(id) {
+      if (cancelled) return;
+
+      const socket = new WebSocket(WS_URL);
+      socketRef.current = socket;
+      setStatus("Connecting...");
+
+      socket.onopen = async () => {
+        if (cancelled) return;
+
+        socket.send(JSON.stringify({ type: "join", documentId: id }));
+
+        const res = await fetch(`${API_URL}/${id}`);
+        const latestDoc = await res.json();
+        if (cancelled) return;
+
+        charactersRef.current = latestDoc.characters || [];
+
+        const queued = pendingOpsRef.current;
+        pendingOpsRef.current = [];
+
+        for (const op of queued) {
+          if (op.kind === "insert") {
+            insertOperation(charactersRef.current, op.character);
+          } else if (op.kind === "delete") {
+            deleteOperation(charactersRef.current, op.id);
+          }
+        }
+
+        setContent(toText(charactersRef.current));
+        setStatus("Connected");
+
+        if (queued.length > 0) {
+          socket.send(JSON.stringify({ type: "crdtOps", documentId: id, operations: queued }));
+        }
+      };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === "crdtOps") {
+          for (const op of data.operations) {
+            if (op.kind === "insert") {
+              insertOperation(charactersRef.current, op.character);
+            } else if (op.kind === "delete") {
+              deleteOperation(charactersRef.current, op.id);
+            }
+          }
+          setContent(toText(charactersRef.current));
+        }
+      };
+
+      socket.onclose = () => {
+        if (cancelled) return;
+        setStatus("Disconnected — retrying...");
+        reconnectTimeoutRef.current = setTimeout(() => connect(id), 2000);
+      };
+    }
 
     async function init() {
       const res = await fetch(API_URL);
@@ -45,37 +105,16 @@ function App() {
       setDocumentId(doc._id);
       setContent(toText(charactersRef.current));
 
-      const socket = new WebSocket(WS_URL);
-      socketRef.current = socket;
-
-      socket.onopen = () => {
-        setStatus("Connected");
-        socket.send(JSON.stringify({ type: "join", documentId: doc._id }));
-      };
-
-      socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === "crdtOps") {
-          for (const op of data.operations) {
-            if (op.kind === "insert") {
-              insertOperation(charactersRef.current, op.character);
-            } else if (op.kind === "delete") {
-              deleteOperation(charactersRef.current, op.id);
-            }
-          }
-          setContent(toText(charactersRef.current));
-        }
-      };
-
-      socket.onclose = () => {
-        setStatus("Disconnected");
-      };
+      connect(doc._id);
     }
 
     init();
 
     return () => {
       cancelled = true;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       if (socketRef.current) {
         socketRef.current.close();
         socketRef.current = null;
@@ -110,8 +149,10 @@ function App() {
     setContent(toText(charactersRef.current));
 
     const socket = socketRef.current;
-    if (socket && socket.readyState === WebSocket.OPEN && outgoingOps.length > 0) {
+    if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({ type: "crdtOps", documentId, operations: outgoingOps }));
+    } else {
+      pendingOpsRef.current.push(...outgoingOps);
     }
   }
 
