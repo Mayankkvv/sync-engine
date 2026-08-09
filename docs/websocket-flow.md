@@ -54,3 +54,16 @@ its queued local operations on top of that fresh state, then 4) sends
 those operations to the server. Because CRDT operations reference
 stable character ids rather than positions, they merge correctly even
 though the document changed while the client was disconnected.
+
+## Presence protocol (new)
+- "join" now also includes userId and name (client-generated, random,
+  session-only — no auth yet)
+- {"type": "presence", "documentId": "...", "users": [{userId, name}]}
+  — sent to the whole room whenever someone joins or disconnects;
+  always the full current list, not an incremental add/remove
+- {"type": "typing", "documentId": "...", "userId": "...", "name":
+  "..."} — sent immediately when a user sends edits, before the
+  database save completes, since it's a disposable UI signal with no
+  need to wait. The client fades each user's typing indicator locally
+  after 2 seconds of no further typing messages from them — the server
+  never sends an explicit "stopped typing" message.

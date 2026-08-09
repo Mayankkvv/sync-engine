@@ -5,16 +5,29 @@ import { insertOperation, deleteOperation, undeleteOperation, toText, visibleIdA
 const API_URL = "http://localhost:5000/api/documents";
 const WS_URL = "ws://localhost:5000";
 
+const ADJECTIVES = ["Curious", "Swift", "Silent", "Happy", "Clever", "Brave", "Gentle", "Witty"];
+const ANIMALS = ["Otter", "Fox", "Panda", "Falcon", "Koala", "Tiger", "Sparrow", "Dolphin"];
+
+function generateName() {
+  const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+  return `${adjective} ${animal}`;
+}
+
 function App() {
   const [documentId, setDocumentId] = useState(null);
   const [content, setContent] = useState("");
   const [status, setStatus] = useState("Loading...");
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [typingUsers, setTypingUsers] = useState(new Map());
 
   const socketRef = useRef(null);
   const charactersRef = useRef([]);
   const pendingOpsRef = useRef([]);
   const reconnectTimeoutRef = useRef(null);
+  const typingTimeoutsRef = useRef({});
   const siteIdRef = useRef(crypto.randomUUID());
+  const nameRef = useRef(generateName());
   const counterRef = useRef(0);
 
   function nextId() {
@@ -35,7 +48,9 @@ function App() {
       socket.onopen = async () => {
         if (cancelled) return;
 
-        socket.send(JSON.stringify({ type: "join", documentId: id }));
+        socket.send(
+          JSON.stringify({ type: "join", documentId: id, userId: siteIdRef.current, name: nameRef.current })
+        );
 
         const res = await fetch(`${API_URL}/${id}`);
         const latestDoc = await res.json();
@@ -64,6 +79,7 @@ function App() {
 
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
+
         if (data.type === "crdtOps") {
           for (const op of data.operations) {
             if (op.kind === "insert") {
@@ -75,6 +91,30 @@ function App() {
             }
           }
           setContent(toText(charactersRef.current));
+        }
+
+        if (data.type === "presence") {
+          setOnlineUsers(data.users);
+        }
+
+        if (data.type === "typing") {
+          setTypingUsers((prev) => {
+            const updated = new Map(prev);
+            updated.set(data.userId, data.name);
+            return updated;
+          });
+
+          if (typingTimeoutsRef.current[data.userId]) {
+            clearTimeout(typingTimeoutsRef.current[data.userId]);
+          }
+
+          typingTimeoutsRef.current[data.userId] = setTimeout(() => {
+            setTypingUsers((prev) => {
+              const updated = new Map(prev);
+              updated.delete(data.userId);
+              return updated;
+            });
+          }, 2000);
         }
       };
 
@@ -117,6 +157,9 @@ function App() {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
+      for (const timeoutId of Object.values(typingTimeoutsRef.current)) {
+        clearTimeout(timeoutId);
+      }
       if (socketRef.current) {
         socketRef.current.close();
         socketRef.current = null;
@@ -151,9 +194,9 @@ function App() {
     setContent(toText(charactersRef.current));
 
     const socket = socketRef.current;
-    if (socket && socket.readyState === WebSocket.OPEN) {
+    if (socket && socket.readyState === WebSocket.OPEN && outgoingOps.length > 0) {
       socket.send(JSON.stringify({ type: "crdtOps", documentId, operations: outgoingOps }));
-    } else {
+    } else if (outgoingOps.length > 0) {
       pendingOpsRef.current.push(...outgoingOps);
     }
   }
@@ -161,9 +204,19 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
       <div className="w-full max-w-2xl bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <h1 className="text-lg font-semibold text-slate-800">Sync Engine</h1>
           <span className="text-sm text-slate-500">{status}</span>
+        </div>
+
+        <div className="flex items-center justify-between mb-4 text-xs text-slate-400">
+          <span>
+            {onlineUsers.length} online
+            {onlineUsers.length > 0 ? `: ${onlineUsers.map((u) => u.name).join(", ")}` : ""}
+          </span>
+          <span className="italic">
+            {typingUsers.size > 0 ? `${Array.from(typingUsers.values()).join(", ")} typing...` : ""}
+          </span>
         </div>
 
         <textarea

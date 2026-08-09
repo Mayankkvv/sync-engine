@@ -100,3 +100,28 @@ rollback — it's computed as a real diff and logged like any other
 edit, so the history stays complete and truthful even after a
 restore, and every connected client sees it happen live through the
 same WebSocket broadcast path as a normal keystroke."
+
+
+## Live presence (online users + typing indicator)
+
+**What it is:** every connected client sees who else is currently in
+the document, plus a transient indicator when someone's actively
+typing.
+
+**Why we built it:** collaborative tools need visible collaboration —
+without presence, users have no idea if they're alone or editing
+alongside others.
+
+**How it works:** the server already tracks WebSocket connections per
+document room (from Step 7); presence just attaches a userId/name to
+each connection and broadcasts the full online list whenever someone
+joins or disconnects. Typing indicators are even simpler: a disposable
+broadcast sent the moment edits arrive, faded out purely by a
+client-side timer that resets on each new keystroke — no "stopped
+typing" message needed from the server at all.
+
+**How to explain it in an interview:** "Typing indicators don't need
+to be reliable or persisted — I deliberately kept that signal outside
+the database-backed save queue so it's never delayed by a write, and
+let the client expire it locally instead of round-tripping a 'stopped'
+event."

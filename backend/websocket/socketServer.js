@@ -16,15 +16,17 @@ function joinRoom(documentId, ws) {
 
 function leaveRoom(ws) {
   const documentId = ws.documentId;
-  if (!documentId) return;
+  if (!documentId) return null;
 
   const room = rooms.get(documentId);
-  if (!room) return;
+  if (!room) return documentId;
 
   room.delete(ws);
   if (room.size === 0) {
     rooms.delete(documentId);
   }
+
+  return documentId;
 }
 
 function broadcastToRoom(documentId, message, excludeWs) {
@@ -36,6 +38,20 @@ function broadcastToRoom(documentId, message, excludeWs) {
       client.send(JSON.stringify(message));
     }
   }
+}
+
+function getPresenceList(documentId) {
+  const room = rooms.get(documentId);
+  if (!room) return [];
+
+  return Array.from(room).map((client) => ({
+    userId: client.userId,
+    name: client.userName,
+  }));
+}
+
+function broadcastPresence(documentId) {
+  broadcastToRoom(documentId, { type: "presence", documentId, users: getPresenceList(documentId) }, null);
 }
 
 function queueForDocument(documentId, task) {
@@ -71,12 +87,17 @@ function setupWebSocket(server) {
       }
 
       if (parsed.type === "join") {
+        ws.userId = parsed.userId;
+        ws.userName = parsed.name || "Anonymous";
         joinRoom(parsed.documentId, ws);
         console.log(`Client joined document ${parsed.documentId}`);
+        broadcastPresence(parsed.documentId);
       }
 
       if (parsed.type === "crdtOps") {
         const { documentId, operations } = parsed;
+
+        broadcastToRoom(documentId, { type: "typing", documentId, userId: ws.userId, name: ws.userName }, ws);
 
         queueForDocument(documentId, async () => {
           const document = await Document.findById(documentId);
@@ -102,8 +123,11 @@ function setupWebSocket(server) {
     });
 
     ws.on("close", () => {
-      leaveRoom(ws);
+      const documentId = leaveRoom(ws);
       console.log("Client disconnected");
+      if (documentId) {
+        broadcastPresence(documentId);
+      }
     });
   });
 

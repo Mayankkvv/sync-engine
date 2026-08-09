@@ -65,3 +65,11 @@ event. This keeps every state change — including restores — visible
 in the history, consistent with event sourcing, and means the restore
 broadcasts as normal small operations instead of a full document
 replacement.
+
+
+## Client-generated random names instead of waiting for auth
+Presence needs some identity to display, but real user accounts don't
+exist yet (intentionally deferred per the spec). Each browser tab
+generates a random adjective+animal name once per session — enough to
+tell people apart visually during testing and demos, with the clear
+understanding this gets replaced once authentication exists.

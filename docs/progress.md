@@ -93,3 +93,12 @@ any past point (via replaying the operation log), and POST
 new event, and broadcast live to every connected tab. Added an
 "undelete" operation to the CRDT to support restoring previously
 deleted characters.
+
+
+## Step 16: Presence (Online Users and Typing Indicator)
+Added live presence: the server tracks each connection's userId/name
+(generated client-side, no auth yet) per room and broadcasts the full
+online list on join/disconnect. Added a lightweight "typing" broadcast,
+sent immediately on incoming edits (not gated behind the database
+save), with the frontend fading each user's typing indicator via a
+per-user 2-second timer.
