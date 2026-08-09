@@ -21,3 +21,7 @@ Response: the updated document, or 404 if not found.
 ## DELETE /api/documents/:id
 Deletes a document by id.
 Response: { "message": "Document deleted" }, or 404 if not found.
+
+## GET /api/documents/:id/history
+Returns every logged operation batch for a document, oldest first.
+Response: an array of { documentId, operations, createdAt }.

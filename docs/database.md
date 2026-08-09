@@ -32,3 +32,15 @@ Added a "characters" field: an array of subdocuments, each shaped
 { id, char, afterId, deleted }, representing the document as a CRDT
 character list. "content" is kept as a plain-text mirror, always
 regenerated from "characters" — never edited directly anymore.
+
+
+### operationlogs (new)
+Created by backend/models/OperationLog.js. Fields:
+- documentId (ObjectId, references documents)
+- operations (array of the same insert/delete shapes used over
+  WebSocket)
+- createdAt, updatedAt (automatic)
+
+Append-only: entries are never updated or deleted. This is the
+event-sourcing log — the document's current "characters" field is a
+snapshot; this collection is the full history of how it got there.

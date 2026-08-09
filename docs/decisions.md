@@ -48,3 +48,10 @@ Mongoose generally detects array changes automatically, but explicitly
 marking the field modified before save() is a small safeguard against
 a subtle class of bug where in-memory changes look correct but don't
 actually persist. Cheap to add, and removes any doubt.
+
+## Separate OperationLog collection instead of embedding history in Document
+Keeping the event log in its own collection, rather than nesting it
+inside the Document itself, means the document stays small and fast to
+load for normal editing, while the (potentially very large) history
+only gets queried when someone actually wants to view or restore a
+past version.

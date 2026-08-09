@@ -54,3 +54,25 @@ edits made fully offline correctly merge with edits made elsewhere
 during the same window — which only works because the CRDT operations
 reference stable ids instead of shifting text positions."
 
+
+## Event-sourcing operation log
+
+**What it is:** a permanent, append-only record of every edit ever
+made to a document, stored separately from the document's current
+state.
+
+**Why we built it:** version history needs more than "here's an old
+copy" — event sourcing means the current state is just one point
+derivable from replaying history, which is what makes true restore
+possible later, not just viewing snapshots.
+
+**How it works:** every batch of CRDT operations that gets applied to
+a document is also saved, unchanged, to a separate OperationLog
+collection, in the same order it was applied — guaranteed by the same
+per-document queue that already prevents save race conditions.
+
+**How to explain it in an interview:** "History isn't a bolted-on
+feature here — because edits are already CRDT operations, logging them
+verbatim as they happen gives me a true event-sourced history for
+free, instead of needing a separate snapshotting system."
+

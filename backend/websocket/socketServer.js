@@ -1,5 +1,6 @@
 const { WebSocketServer } = require("ws");
 const Document = require("../models/Document");
+const OperationLog = require("../models/OperationLog");
 const { insertOperation, deleteOperation, toText } = require("../crdt/crdt");
 
 const rooms = new Map();
@@ -92,6 +93,8 @@ function setupWebSocket(server) {
           document.content = toText(document.characters);
           document.markModified("characters");
           await document.save();
+
+          await OperationLog.create({ documentId, operations });
 
           broadcastToRoom(documentId, { type: "crdtOps", documentId, operations }, ws);
         });

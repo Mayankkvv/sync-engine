@@ -77,3 +77,10 @@ seconds on disconnect. On reconnect, it fetches the latest document,
 merges any locally-queued offline operations on top of it using the
 CRDT, and sends them to the server. Tested with real per-tab network
 throttling simulating one user going offline while another kept editing.
+
+
+## Step 14: Operation Event Log
+Added an OperationLog model that permanently records every batch of
+CRDT operations applied to a document, in order, separate from the
+document's current state. Added GET /api/documents/:id/history to
+view the raw log. Nothing restores from it yet — that's next.

@@ -1,5 +1,6 @@
 const express = require("express");
 const Document = require("../models/Document");
+const OperationLog = require("../models/OperationLog");
 
 const router = express.Router();
 
@@ -29,6 +30,15 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Document not found" });
     }
     res.json(document);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/:id/history", async (req, res) => {
+  try {
+    const logs = await OperationLog.find({ documentId: req.params.id }).sort({ createdAt: 1 });
+    res.json(logs);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
