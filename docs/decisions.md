@@ -80,3 +80,10 @@ converges, readable by eye). Once real automated tests existed
 covering the same scenarios with actual assertions, keeping the
 manual script around would just be duplicate, unmaintained code — it
 was deleted.
+
+## Render instead of a serverless platform for the backend
+The WebSocket server needs a persistent, always-open connection.
+Typical serverless platforms run functions per-request and tear them
+down immediately after, which isn't compatible with that. Render runs
+the backend as a continuously running process instead, matching how
+it already behaves locally.

@@ -125,3 +125,21 @@ to be reliable or persisted — I deliberately kept that signal outside
 the database-backed save queue so it's never delayed by a write, and
 let the client expire it locally instead of round-tripping a 'stopped'
 event."
+
+
+
+## Deploying a WebSocket backend
+
+**What it is:** the backend now runs continuously on Render, reachable
+by a real public URL, instead of only existing on a local machine.
+
+**Why we built it this way:** WebSocket connections need a server
+process that stays alive continuously — that ruled out typical
+serverless hosting, which runs code per-request and shuts it down
+right after.
+
+**How to explain it in an interview:** "I specifically picked a host
+that supports long-running processes because of the WebSocket
+requirement — it's a good example of infrastructure choice being
+driven by the actual architecture of the app, not just convenience or
+cost."

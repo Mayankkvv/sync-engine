@@ -108,3 +108,10 @@ Installed Jest and wrote 7 automated tests covering basic CRDT
 operations (insert, delete, undelete) and convergence under concurrent
 edits — replacing the manual testCRDT.js script from Step 11 with
 real, repeatable assertions. All tests pass via npm test.
+
+## Step 18: Backend Deployed to Render
+Deployed the Express + WebSocket backend to Render as a Web Service,
+with Root Directory set to "backend" for the monorepo, MONGO_URI set
+as an environment variable, and PORT handled automatically by Render.
+Confirmed the live REST API and a live wss:// WebSocket connection
+both work from outside localhost.
