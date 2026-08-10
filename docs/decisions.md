@@ -73,3 +73,10 @@ exist yet (intentionally deferred per the spec). Each browser tab
 generates a random adjective+animal name once per session — enough to
 tell people apart visually during testing and demos, with the clear
 understanding this gets replaced once authentication exists.
+
+## Converting testCRDT.js into Jest tests instead of keeping both
+The manual script served its purpose in Step 11 (proving the CRDT
+converges, readable by eye). Once real automated tests existed
+covering the same scenarios with actual assertions, keeping the
+manual script around would just be duplicate, unmaintained code — it
+was deleted.

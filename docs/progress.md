@@ -102,3 +102,9 @@ online list on join/disconnect. Added a lightweight "typing" broadcast,
 sent immediately on incoming edits (not gated behind the database
 save), with the frontend fading each user's typing indicator via a
 per-user 2-second timer.
+
+## Step 17: Automated CRDT Tests with Jest
+Installed Jest and wrote 7 automated tests covering basic CRDT
+operations (insert, delete, undelete) and convergence under concurrent
+edits — replacing the manual testCRDT.js script from Step 11 with
+real, repeatable assertions. All tests pass via npm test.
