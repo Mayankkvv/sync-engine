@@ -143,3 +143,19 @@ that supports long-running processes because of the WebSocket
 requirement — it's a good example of infrastructure choice being
 driven by the actual architecture of the app, not just convenience or
 cost."
+
+## Environment-based configuration and CORS lockdown
+
+**What it is:** the frontend's backend URL and the backend's CORS
+allowlist are both driven by environment variables instead of
+hardcoded values.
+
+**Why we built it this way:** hardcoded localhost URLs silently break
+the moment code runs somewhere other than your own machine — this is
+one of the most common "works on my machine" bugs in real deployments.
+
+**How to explain it in an interview:** "CORS was deliberately left
+open during development since the frontend URL didn't exist yet — I
+tracked that as a known gap in decisions.md, then closed it as soon as
+deployment gave me a real URL to restrict it to, rather than shipping
+with 'allow everyone' permanently."

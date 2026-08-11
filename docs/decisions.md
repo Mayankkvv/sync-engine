@@ -87,3 +87,11 @@ Typical serverless platforms run functions per-request and tear them
 down immediately after, which isn't compatible with that. Render runs
 the backend as a continuously running process instead, matching how
 it already behaves locally.
+
+## Configurable URLs via Vite env vars instead of hardcoding
+Hardcoded localhost URLs only worked because frontend and backend
+always ran together locally. Vite's import.meta.env.VITE_* pattern
+lets the same code run correctly against either localhost (dev) or
+the real deployed backend (production), configured per-environment
+instead of hardcoded — with a localhost fallback so local dev never
+breaks even without a .env file present.

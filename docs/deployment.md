@@ -26,7 +26,20 @@ Live backend URL: https://sync-engine-backend-mcwk.onrender.com/
 (replace with your actual Render URL)
 
 ## Frontend — Vercel
-Not deployed yet — planned for the next step.
+Deployed with Root Directory set to "frontend" (monorepo). Build
+command and output directory auto-detected for Vite (npm run build,
+dist).
+
+Environment variables set in Vercel's dashboard:
+- VITE_API_URL — the deployed Render backend's /api/documents URL
+- VITE_WS_URL — the deployed Render backend's URL with wss:// instead
+  of https://
+
+Locally, these same variables live in frontend/.env (gitignored),
+defaulting to localhost if unset — see frontend/.env.example for the
+expected shape.
+
+Live frontend URL: https://sync-engine-git-main-mayank231.vercel.app
 
 ## Why Render for the backend instead of a serverless platform
 This backend runs a persistent WebSocket server, which needs a
@@ -34,3 +47,9 @@ connection that stays open continuously. Most serverless platforms
 run code per-request and shut it down right after, which doesn't
 support a long-lived WebSocket connection. Render runs the backend as
 an always-on process, the same way it behaves locally.
+
+## CORS lockdown
+Backend now only allows requests from an explicit list: localhost:5173
+for local development, plus the real deployed frontend URL, read from
+a FRONTEND_URL environment variable set on Render. Replaces the
+wide-open cors() from Step 9.

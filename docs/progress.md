@@ -115,3 +115,13 @@ with Root Directory set to "backend" for the monorepo, MONGO_URI set
 as an environment variable, and PORT handled automatically by Render.
 Confirmed the live REST API and a live wss:// WebSocket connection
 both work from outside localhost.
+
+## Step 19: Frontend Deployed to Vercel, CORS Locked Down
+Made the frontend's backend URL configurable via Vite environment
+variables (VITE_API_URL, VITE_WS_URL) instead of hardcoded localhost.
+Deployed to Vercel with Root Directory set to "frontend". Used the
+real Vercel URL to restrict backend CORS to an explicit allowlist
+(localhost for dev, the real frontend URL via FRONTEND_URL on Render)
+instead of allowing all origins. Confirmed live sync works between
+two tabs over the real internet, and that CORS now actually rejects
+unauthorized origins.
