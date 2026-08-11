@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { computeOperation } from "../utils/diff";
 import { insertOperation, deleteOperation, undeleteOperation, toText, visibleIdAt } from "../utils/crdt";
+import HistoryPanel from "./HistoryPanel";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/documents";
 const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:5000";
@@ -11,6 +12,7 @@ function DocumentEditor({ documentId, token, userName }) {
   const [status, setStatus] = useState("Loading...");
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsers, setTypingUsers] = useState(new Map());
+  const [showHistory, setShowHistory] = useState(false);
 
   const socketRef = useRef(null);
   const charactersRef = useRef([]);
@@ -185,7 +187,15 @@ function DocumentEditor({ documentId, token, userName }) {
       <div className="w-full max-w-2xl bg-white rounded-xl shadow-sm border border-slate-200 p-6">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-lg font-semibold text-slate-800 truncate">{title || "Untitled Document"}</h1>
-          <span className="text-sm text-slate-500 shrink-0">{status}</span>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => setShowHistory(true)}
+              className="text-sm text-slate-500 hover:text-slate-800"
+            >
+              History
+            </button>
+            <span className="text-sm text-slate-500">{status}</span>
+          </div>
         </div>
 
         <div className="flex items-center justify-between mb-4 text-xs text-slate-400">
@@ -204,6 +214,10 @@ function DocumentEditor({ documentId, token, userName }) {
           className="w-full h-64 rounded-lg border border-slate-300 p-3 text-slate-800 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
         />
       </div>
+
+      {showHistory && (
+        <HistoryPanel documentId={documentId} token={token} onClose={() => setShowHistory(false)} />
+      )}
     </div>
   );
 }
