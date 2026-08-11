@@ -44,3 +44,10 @@ Created by backend/models/OperationLog.js. Fields:
 Append-only: entries are never updated or deleted. This is the
 event-sourcing log — the document's current "characters" field is a
 snapshot; this collection is the full history of how it got there.
+
+### users (new)
+Created by backend/models/User.js. Fields:
+- name (String)
+- email (String, unique)
+- passwordHash (String — bcrypt hash, never the plain password)
+- createdAt, updatedAt (automatic)

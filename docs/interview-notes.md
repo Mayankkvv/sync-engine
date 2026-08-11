@@ -176,3 +176,24 @@ deliberate reset mechanism — changing the key forces React to unmount
 and remount the component instead of patching it, which guarantees
 clean teardown of the WebSocket and timers without me having to
 manually track and reset every piece of state myself."
+
+## Authentication with bcrypt + JWT
+
+**What it is:** account registration and login, with passwords hashed
+(never stored in plain text) and a signed JWT issued on success.
+
+**Why we built it this way:** documents had no ownership at all until
+now — anyone with the URL could see and edit everything. This is the
+foundation for scoping documents to their actual owners.
+
+**How it works:** bcrypt hashes passwords with a one-way algorithm, so
+even a compromised database doesn't expose real passwords. Login
+re-hashes the submitted password and compares hashes, never decrypting
+anything. A successful login returns a JWT — a signed token containing
+the user's id — which future requests will present to prove identity.
+
+**How to explain it in an interview:** "I deliberately returned the
+same generic error for a wrong email and a wrong password, instead of
+being specific about which one failed — a small detail, but it's the
+kind of thing that stops an attacker from using your login endpoint to
+enumerate valid accounts."

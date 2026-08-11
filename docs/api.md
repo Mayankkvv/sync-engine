@@ -38,3 +38,13 @@ Computed as a real diff against the current state (delete/undelete
 operations), saved, logged as a new history entry, and broadcast live
 to every connected client viewing the document.
 Response: the updated document.
+
+## POST /api/auth/register
+Creates a new account.
+Request body: { name, email, password }
+Response: { token, user: { id, name, email } }
+
+## POST /api/auth/login
+Logs in an existing account.
+Request body: { email, password }
+Response: { token, user: { id, name, email } }

@@ -135,3 +135,9 @@ first document"). Used React's key prop to fully remount the editor on
 document switch, cleanly resetting WebSocket connections and state.
 Confirmed multiple documents each get independent CRDT rooms, presence,
 and typing indicators.
+
+## Step 21: User Registration and Login (Backend Only)
+Added a User model (name, email, bcrypt-hashed password) and
+POST /api/auth/register + POST /api/auth/login routes, returning a
+signed JWT on success. Not yet wired into any document routes or the
+frontend — that's next.

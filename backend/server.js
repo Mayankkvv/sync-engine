@@ -4,6 +4,7 @@ const http = require("http");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const documentRoutes = require("./routes/documentRoutes");
+const authRoutes = require("./routes/authRoutes");
 const { setupWebSocket } = require("./websocket/socketServer");
 
 connectDB();
@@ -23,6 +24,7 @@ app.get("/", (req, res) => {
   res.json({ message: "Sync Engine backend is running" });
 });
 
+app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
 
 const server = http.createServer(app);
