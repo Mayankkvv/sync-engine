@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { computeOperation } from "./utils/diff";
 import { insertOperation, deleteOperation, undeleteOperation, toText, visibleIdAt } from "./utils/crdt";
 
-const API_URL = "http://localhost:5000/api/documents";
-const WS_URL = "ws://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/documents";
+const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:5000";
 
 const ADJECTIVES = ["Curious", "Swift", "Silent", "Happy", "Clever", "Brave", "Gentle", "Witty"];
 const ANIMALS = ["Otter", "Fox", "Panda", "Falcon", "Koala", "Tiger", "Sparrow", "Dolphin"];
