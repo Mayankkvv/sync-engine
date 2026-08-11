@@ -95,3 +95,11 @@ lets the same code run correctly against either localhost (dev) or
 the real deployed backend (production), configured per-environment
 instead of hardcoded — with a localhost fallback so local dev never
 breaks even without a .env file present.
+
+## key={documentId} for remounting instead of manual state resets
+Switching documents needs to fully reset the editor's WebSocket
+connection, CRDT state, presence, and typing timers. Rather than
+writing manual reset logic for each piece of state, giving the
+DocumentEditor component a key tied to documentId lets React handle
+it: changing the key causes a full unmount (running existing cleanup)
+and fresh mount, guaranteeing no state leaks between documents.

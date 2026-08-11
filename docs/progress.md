@@ -125,3 +125,13 @@ real Vercel URL to restrict backend CORS to an explicit allowlist
 instead of allowing all origins. Confirmed live sync works between
 two tabs over the real internet, and that CORS now actually rejects
 unauthorized origins.
+
+## Step 20: Document List Sidebar (Create and Switch Documents)
+Restructured the frontend into App (top-level, tracks selected
+document), Sidebar (lists all documents via existing GET /api/documents,
+creates new ones), and DocumentEditor (the existing live-sync editor,
+now parameterized by a documentId prop instead of always loading "the
+first document"). Used React's key prop to fully remount the editor on
+document switch, cleanly resetting WebSocket connections and state.
+Confirmed multiple documents each get independent CRDT rooms, presence,
+and typing indicators.

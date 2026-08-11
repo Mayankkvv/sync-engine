@@ -159,3 +159,20 @@ open during development since the frontend URL didn't exist yet — I
 tracked that as a known gap in decisions.md, then closed it as soon as
 deployment gave me a real URL to restrict it to, rather than shipping
 with 'allow everyone' permanently."
+
+## Document switching via React's key prop
+
+**What it is:** clicking a different document in the sidebar fully
+tears down and rebuilds the editor component, rather than updating it
+in place.
+
+**Why we built it this way:** the editor holds a lot of connected
+state — WebSocket connection, CRDT character list, presence, typing
+timers — and manually resetting every piece when switching documents
+would be error-prone and easy to leave something stale.
+
+**How to explain it in an interview:** "I used React's key prop as a
+deliberate reset mechanism — changing the key forces React to unmount
+and remount the component instead of patching it, which guarantees
+clean teardown of the WebSocket and timers without me having to
+manually track and reset every piece of state myself."
