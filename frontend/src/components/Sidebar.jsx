@@ -2,30 +2,53 @@ import { useEffect, useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/documents";
 
-function Sidebar({ selectedDocumentId, onSelectDocument }) {
+function Sidebar({ token, selectedDocumentId, onSelectDocument }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     async function loadDocuments() {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-      setDocuments(data);
-      setLoading(false);
+      try {
+        const res = await fetch(API_URL, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          throw new Error(`Server responded with status ${res.status}`);
+        }
+        const data = await res.json();
+        setDocuments(data);
+      } catch (err) {
+        console.error("Failed to load documents:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     }
 
     loadDocuments();
-  }, []);
+  }, [token]);
 
   async function handleCreate() {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: "Untitled Document", content: "" }),
-    });
-    const newDoc = await res.json();
-    setDocuments((prev) => [newDoc, ...prev]);
-    onSelectDocument(newDoc._id);
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title: "Untitled Document", content: "" }),
+      });
+      if (!res.ok) {
+        throw new Error(`Server responded with status ${res.status}`);
+      }
+      const newDoc = await res.json();
+      setDocuments((prev) => [newDoc, ...prev]);
+      onSelectDocument(newDoc._id);
+    } catch (err) {
+      console.error("Failed to create document:", err);
+      setError(err.message);
+    }
   }
 
   return (
@@ -42,7 +65,13 @@ function Sidebar({ selectedDocumentId, onSelectDocument }) {
       <div className="flex-1 overflow-y-auto">
         {loading && <p className="p-4 text-sm text-slate-400">Loading...</p>}
 
-        {!loading && documents.length === 0 && (
+        {error && (
+          <p className="p-4 text-sm text-red-500">
+            Couldn't reach the server: {error}
+          </p>
+        )}
+
+        {!loading && !error && documents.length === 0 && (
           <p className="p-4 text-sm text-slate-400">No documents yet.</p>
         )}
 

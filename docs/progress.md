@@ -141,3 +141,14 @@ Added a User model (name, email, bcrypt-hashed password) and
 POST /api/auth/register + POST /api/auth/login routes, returning a
 signed JWT on success. Not yet wired into any document routes or the
 frontend — that's next.
+
+## Step 22: Authentication Wired Into Documents (Backend + Frontend)
+All document REST routes now require a valid JWT and are scoped to the
+requesting user's own documents (via a shared getOwnedDocument helper,
+returning 404 for both "missing" and "not yours" to avoid leaking
+info). The WebSocket join handshake now verifies the same JWT and
+document ownership before allowing a client into a room. Added a real
+Login/Register screen on the frontend, storing the session in
+localStorage, replacing the random per-tab names with real account
+names. Confirmed two separate accounts cannot see or edit each other's
+documents.

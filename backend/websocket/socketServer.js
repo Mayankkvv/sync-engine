@@ -1,4 +1,5 @@
 const { WebSocketServer } = require("ws");
+const jwt = require("jsonwebtoken");
 const Document = require("../models/Document");
 const OperationLog = require("../models/OperationLog");
 const { insertOperation, deleteOperation, toText } = require("../crdt/crdt");
@@ -68,6 +69,26 @@ function queueForDocument(documentId, task) {
   return next;
 }
 
+async function handleJoin(parsed, ws) {
+  try {
+    const decoded = jwt.verify(parsed.token, process.env.JWT_SECRET);
+    const document = await Document.findById(parsed.documentId);
+
+    if (!document || document.owner.toString() !== decoded.userId) {
+      ws.send(JSON.stringify({ type: "error", message: "Not authorized to view this document" }));
+      return;
+    }
+
+    ws.userId = decoded.userId;
+    ws.userName = parsed.name || "Anonymous";
+    joinRoom(parsed.documentId, ws);
+    console.log(`Client joined document ${parsed.documentId}`);
+    broadcastPresence(parsed.documentId);
+  } catch (error) {
+    ws.send(JSON.stringify({ type: "error", message: "Invalid or expired session" }));
+  }
+}
+
 function setupWebSocket(server) {
   const wss = new WebSocketServer({ server });
 
@@ -87,14 +108,12 @@ function setupWebSocket(server) {
       }
 
       if (parsed.type === "join") {
-        ws.userId = parsed.userId;
-        ws.userName = parsed.name || "Anonymous";
-        joinRoom(parsed.documentId, ws);
-        console.log(`Client joined document ${parsed.documentId}`);
-        broadcastPresence(parsed.documentId);
+        handleJoin(parsed, ws);
       }
 
       if (parsed.type === "crdtOps") {
+        if (!ws.userId) return;
+
         const { documentId, operations } = parsed;
 
         broadcastToRoom(documentId, { type: "typing", documentId, userId: ws.userId, name: ws.userName }, ws);

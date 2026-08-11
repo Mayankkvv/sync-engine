@@ -24,6 +24,11 @@ const documentSchema = new mongoose.Schema(
       type: [characterSchema],
       default: [],
     },
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   {
     timestamps: true,

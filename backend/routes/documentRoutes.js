@@ -4,13 +4,24 @@ const OperationLog = require("../models/OperationLog");
 const reconstructAsOf = require("../services/reconstructDocument");
 const { toText, deleteOperation, undeleteOperation } = require("../crdt/crdt");
 const { queueForDocument, broadcastToRoom } = require("../websocket/socketServer");
+const requireAuth = require("../middleware/auth");
 
 const router = express.Router();
+
+router.use(requireAuth);
+
+async function getOwnedDocument(id, userId) {
+  const document = await Document.findById(id);
+  if (!document || document.owner.toString() !== userId) {
+    return null;
+  }
+  return document;
+}
 
 router.post("/", async (req, res) => {
   try {
     const { title, content } = req.body;
-    const document = await Document.create({ title, content });
+    const document = await Document.create({ title, content, owner: req.userId });
     res.status(201).json(document);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -19,7 +30,7 @@ router.post("/", async (req, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const documents = await Document.find().sort({ updatedAt: -1 });
+    const documents = await Document.find({ owner: req.userId }).sort({ updatedAt: -1 });
     res.json(documents);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -28,7 +39,7 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const document = await Document.findById(req.params.id);
+    const document = await getOwnedDocument(req.params.id, req.userId);
     if (!document) {
       return res.status(404).json({ error: "Document not found" });
     }
@@ -40,6 +51,11 @@ router.get("/:id", async (req, res) => {
 
 router.get("/:id/history", async (req, res) => {
   try {
+    const document = await getOwnedDocument(req.params.id, req.userId);
+    if (!document) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
     const logs = await OperationLog.find({ documentId: req.params.id }).sort({ createdAt: 1 });
     res.json(logs);
   } catch (error) {
@@ -49,6 +65,11 @@ router.get("/:id/history", async (req, res) => {
 
 router.get("/:id/version/:logId", async (req, res) => {
   try {
+    const document = await getOwnedDocument(req.params.id, req.userId);
+    if (!document) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
     const log = await OperationLog.findById(req.params.logId);
     if (!log || log.documentId.toString() !== req.params.id) {
       return res.status(404).json({ error: "Version not found" });
@@ -64,6 +85,11 @@ router.get("/:id/version/:logId", async (req, res) => {
 
 router.post("/:id/restore/:logId", async (req, res) => {
   try {
+    const owned = await getOwnedDocument(req.params.id, req.userId);
+    if (!owned) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
     const log = await OperationLog.findById(req.params.logId);
     if (!log || log.documentId.toString() !== req.params.id) {
       return res.status(404).json({ error: "Version not found" });
@@ -121,15 +147,17 @@ router.post("/:id/restore/:logId", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
+    const owned = await getOwnedDocument(req.params.id, req.userId);
+    if (!owned) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
     const { title, content } = req.body;
     const document = await Document.findByIdAndUpdate(
       req.params.id,
       { title, content },
       { new: true }
     );
-    if (!document) {
-      return res.status(404).json({ error: "Document not found" });
-    }
     res.json(document);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -138,10 +166,12 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const document = await Document.findByIdAndDelete(req.params.id);
-    if (!document) {
+    const owned = await getOwnedDocument(req.params.id, req.userId);
+    if (!owned) {
       return res.status(404).json({ error: "Document not found" });
     }
+
+    await Document.findByIdAndDelete(req.params.id);
     res.json({ message: "Document deleted" });
   } catch (error) {
     res.status(500).json({ error: error.message });

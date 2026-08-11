@@ -67,3 +67,11 @@ though the document changed while the client was disconnected.
   need to wait. The client fades each user's typing indicator locally
   after 2 seconds of no further typing messages from them — the server
   never sends an explicit "stopped typing" message.
+
+  ## Authentication on join (updated)
+"join" messages now include a token (the JWT from login). The server
+verifies it and checks that the requesting user owns the target
+document before adding them to the room. On failure, the server sends
+{"type": "error", "message": "..."} and does not join the room. The
+crdtOps handler also ignores any message from a connection that never
+successfully joined (no userId set on it).

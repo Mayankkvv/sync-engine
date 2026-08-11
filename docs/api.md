@@ -48,3 +48,10 @@ Response: { token, user: { id, name, email } }
 Logs in an existing account.
 Request body: { email, password }
 Response: { token, user: { id, name, email } }
+
+## Authentication (updated)
+Every /api/documents route now requires a valid token:
+Header: Authorization: Bearer <token>
+Requests without a valid token receive 401. Requests for a document
+that exists but belongs to a different user receive 404 (not 403),
+to avoid revealing that the document exists at all.

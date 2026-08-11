@@ -5,16 +5,7 @@ import { insertOperation, deleteOperation, undeleteOperation, toText, visibleIdA
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/documents";
 const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:5000";
 
-const ADJECTIVES = ["Curious", "Swift", "Silent", "Happy", "Clever", "Brave", "Gentle", "Witty"];
-const ANIMALS = ["Otter", "Fox", "Panda", "Falcon", "Koala", "Tiger", "Sparrow", "Dolphin"];
-
-function generateName() {
-  const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
-  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
-  return `${adjective} ${animal}`;
-}
-
-function DocumentEditor({ documentId }) {
+function DocumentEditor({ documentId, token, userName }) {
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState("Loading...");
@@ -27,7 +18,6 @@ function DocumentEditor({ documentId }) {
   const reconnectTimeoutRef = useRef(null);
   const typingTimeoutsRef = useRef({});
   const siteIdRef = useRef(crypto.randomUUID());
-  const nameRef = useRef(generateName());
   const counterRef = useRef(0);
 
   function nextId() {
@@ -49,10 +39,18 @@ function DocumentEditor({ documentId }) {
         if (cancelled) return;
 
         socket.send(
-          JSON.stringify({ type: "join", documentId, userId: siteIdRef.current, name: nameRef.current })
+          JSON.stringify({ type: "join", documentId, token, userId: siteIdRef.current, name: userName })
         );
 
-        const res = await fetch(`${API_URL}/${documentId}`);
+        const res = await fetch(`${API_URL}/${documentId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          setStatus("Not authorized");
+          return;
+        }
+
         const latestDoc = await res.json();
         if (cancelled) return;
 
@@ -80,6 +78,11 @@ function DocumentEditor({ documentId }) {
 
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
+
+        if (data.type === "error") {
+          setStatus(data.message);
+          return;
+        }
 
         if (data.type === "crdtOps") {
           for (const op of data.operations) {
@@ -141,7 +144,7 @@ function DocumentEditor({ documentId }) {
         socketRef.current = null;
       }
     };
-  }, [documentId]);
+  }, [documentId, token, userName]);
 
   function handleChange(e) {
     const newText = e.target.value;

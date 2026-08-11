@@ -103,3 +103,24 @@ writing manual reset logic for each piece of state, giving the
 DocumentEditor component a key tied to documentId lets React handle
 it: changing the key causes a full unmount (running existing cleanup)
 and fresh mount, guaranteeing no state leaks between documents.
+
+## Same 404 for "document not found" and "not your document"
+getOwnedDocument returns null in both cases, and every route responds
+with a plain 404 either way — never a distinguishing 403. This stops
+someone from probing document ids to learn which ones exist but belong
+to other users.
+
+## localStorage for the session token instead of httpOnly cookies
+localStorage is readable by any script running on the page (a known
+XSS-related risk), while httpOnly cookies aren't. We used localStorage
+anyway since it's simpler to implement and this project isn't handling
+sensitive real-world data — a documented, deliberate simplification,
+not an oversight.
+
+## Documents created before this step have no owner
+Existing test documents predate the "owner" field, which is now
+required for new documents. Since document listing filters by owner,
+those old documents simply stop appearing for any account — not
+deleted, just unreachable through the app. No migration was written,
+consistent with how earlier legacy-data gaps in this project were
+handled.

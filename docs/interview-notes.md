@@ -197,3 +197,19 @@ same generic error for a wrong email and a wrong password, instead of
 being specific about which one failed — a small detail, but it's the
 kind of thing that stops an attacker from using your login endpoint to
 enumerate valid accounts."
+
+## End-to-end authentication (REST + WebSocket)
+
+**What it is:** every document route and the WebSocket join handshake
+both independently verify identity and document ownership before
+allowing access.
+
+**Why we built it this way:** protecting only the REST API while
+leaving the WebSocket unchecked would still let anyone bypass "the
+front door" entirely and edit any document directly over the socket —
+both layers needed the same check.
+
+**How to explain it in an interview:** "I made sure authorization was
+enforced at every entry point into the data, not just the obvious one
+— it's easy to secure a REST API and forget that a WebSocket
+connection is a second, completely separate way into the same data."
