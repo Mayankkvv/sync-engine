@@ -152,3 +152,11 @@ Login/Register screen on the frontend, storing the session in
 localStorage, replacing the random per-tab names with real account
 names. Confirmed two separate accounts cannot see or edit each other's
 documents.
+
+## Step 23: Version History Panel (Frontend)
+Added a HistoryPanel component listing every logged version of a
+document, with a click-to-preview and a "Restore this version" button,
+using the existing history/version/restore routes from Step 15 (now
+sending the Authorization header required since Step 22). Restoring
+closes the panel and relies on the existing WebSocket broadcast to
+update the live editor, with no new backend logic needed.

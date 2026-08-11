@@ -213,3 +213,20 @@ both layers needed the same check.
 enforced at every entry point into the data, not just the obvious one
 — it's easy to secure a REST API and forget that a WebSocket
 connection is a second, completely separate way into the same data."
+
+
+## Version History UI built entirely on existing backend work
+
+**What it is:** a panel to browse, preview, and restore past versions
+of a document, from the actual UI instead of Postman.
+
+**Why it came together so quickly:** the backend (event log, replay,
+restore-as-a-diff, live broadcast) was already fully built and tested
+by Step 15 — this step required zero new backend logic, only a
+frontend window onto capability that already existed.
+
+**How to explain it in an interview:** "Building the backend
+capability first and proving it thoroughly through direct API calls,
+before ever writing UI for it, meant the actual frontend feature came
+together as pure plumbing — no new business logic, no new edge cases,
+just displaying and triggering things I'd already gotten right."
