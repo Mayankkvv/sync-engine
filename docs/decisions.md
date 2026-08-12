@@ -131,3 +131,11 @@ rather than sharing one. If the local .env value were ever
 accidentally exposed, a shared secret would compromise production
 sessions too — separate secrets contain that risk to whichever
 environment actually leaked.
+
+
+## PUT /:id changed to a partial update
+The original implementation always set both title and content from
+the request body, meaning a rename request sending only { title }
+would have overwritten content with undefined. Fixed by only including
+fields that are actually present in req.body before calling
+findByIdAndUpdate — caught while building the sidebar's rename feature.

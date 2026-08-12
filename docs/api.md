@@ -55,3 +55,9 @@ Header: Authorization: Bearer <token>
 Requests without a valid token receive 401. Requests for a document
 that exists but belongs to a different user receive 404 (not 403),
 to avoid revealing that the document exists at all.
+
+## PUT /api/documents/:id (updated)
+Now a true partial update — only fields present in the request body
+are changed. Sending { title } alone updates only the title and
+leaves content untouched.
+

@@ -167,3 +167,12 @@ variables (distinct from the local .env value), fixing a gap where
 auth had been built and wired up after the initial backend deployment
 and had never actually worked on the live site. Confirmed register,
 login, and full live sync work end-to-end on the real deployed URL.
+
+
+## Step 25: Rename and Delete in the Sidebar
+Added inline rename (click to edit, Enter to save, Escape to cancel)
+and delete (with a confirmation prompt) to the document sidebar, using
+the existing PUT/DELETE routes from Step 5. Fixed PUT /:id to only
+update fields actually present in the request body, instead of always
+expecting both title and content — a rename could previously have
+silently wiped a document's content.
