@@ -53,3 +53,10 @@ Backend now only allows requests from an explicit list: localhost:5173
 for local development, plus the real deployed frontend URL, read from
 a FRONTEND_URL environment variable set on Render. Replaces the
 wide-open cors() from Step 9.
+
+
+## JWT_SECRET (Render)
+Added as an environment variable on Render, separate from the value in
+local .env. Auth (Steps 21-22) was built after the initial backend
+deployment (Step 18), so this was a real gap until fixed here — the
+live backend had no secret to sign or verify tokens with.

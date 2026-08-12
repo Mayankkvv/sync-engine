@@ -124,3 +124,10 @@ those old documents simply stop appearing for any account — not
 deleted, just unreachable through the app. No migration was written,
 consistent with how earlier legacy-data gaps in this project were
 handled.
+
+## Separate JWT_SECRET per environment
+Local and production use different, independently generated secrets
+rather than sharing one. If the local .env value were ever
+accidentally exposed, a shared secret would compromise production
+sessions too — separate secrets contain that risk to whichever
+environment actually leaked.

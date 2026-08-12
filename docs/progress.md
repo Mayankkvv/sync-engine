@@ -160,3 +160,10 @@ using the existing history/version/restore routes from Step 15 (now
 sending the Authorization header required since Step 22). Restoring
 closes the panel and relies on the existing WebSocket broadcast to
 update the live editor, with no new backend logic needed.
+
+## Step 24: Production Auth Configuration (Render)
+Added a separate, production-only JWT_SECRET to Render's environment
+variables (distinct from the local .env value), fixing a gap where
+auth had been built and wired up after the initial backend deployment
+and had never actually worked on the live site. Confirmed register,
+login, and full live sync work end-to-end on the real deployed URL.
