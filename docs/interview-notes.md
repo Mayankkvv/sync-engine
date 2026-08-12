@@ -230,3 +230,17 @@ capability first and proving it thoroughly through direct API calls,
 before ever writing UI for it, meant the actual frontend feature came
 together as pure plumbing — no new business logic, no new edge cases,
 just displaying and triggering things I'd already gotten right."
+
+
+## API integration tests catching real regressions
+
+**What it is:** Supertest-based tests hitting the real Express app and
+a dedicated test database, covering full document CRUD plus the two
+actual bugs this project hit and fixed before (ownership isolation,
+partial-update overwrite).
+
+**How to explain it in an interview:** "These weren't hypothetical
+test cases — I wrote tests specifically for the two real bugs I'd
+already found and fixed by hand, so a regression in either one would
+be caught automatically instead of relying on me remembering to
+manually re-check old features every time I touch the code."

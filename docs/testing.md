@@ -29,3 +29,14 @@ result.
 ## Not yet tested
 API routes (Document CRUD, history, restore) and WebSocket message
 handling don't have automated tests yet — planned for a future step.
+
+## API tests (routes/documentRoutes.test.js)
+Uses Supertest against the real Express app (via the new app.js) and a
+dedicated test-only MongoDB database (MONGO_TEST_URI), dropped clean
+after each run. Covers: rejecting unauthenticated requests, full CRUD,
+that a different user cannot access another user's document (Step 22),
+and that PUT only updates fields actually sent (Step 25).
+
+## Not yet tested
+WebSocket message handling (crdtOps, presence, typing) and the
+history/version/restore routes don't have automated tests yet.

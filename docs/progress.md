@@ -176,3 +176,12 @@ the existing PUT/DELETE routes from Step 5. Fixed PUT /:id to only
 update fields actually present in the request body, instead of always
 expecting both title and content — a rename could previously have
 silently wiped a document's content.
+
+## Step 26: Automated API Tests with Supertest
+Split server.js into app.js (Express app, routes, middleware) and
+server.js (connects DB, starts HTTP server, attaches WebSockets) to
+make the app testable without a running port. Added 8 Supertest-based
+tests against a dedicated MONGO_TEST_URI database, covering document
+CRUD, the "no token" rejection, the Step 22 ownership isolation check,
+and the Step 25 partial-update fix. All 15 tests (7 CRDT + 8 API) pass
+via npm test.
