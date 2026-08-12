@@ -152,12 +152,11 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ error: "Document not found" });
     }
 
-    const { title, content } = req.body;
-    const document = await Document.findByIdAndUpdate(
-      req.params.id,
-      { title, content },
-      { new: true }
-    );
+    const updates = {};
+    if (req.body.title !== undefined) updates.title = req.body.title;
+    if (req.body.content !== undefined) updates.content = req.body.content;
+
+    const document = await Document.findByIdAndUpdate(req.params.id, updates, { new: true });
     res.json(document);
   } catch (error) {
     res.status(500).json({ error: error.message });
