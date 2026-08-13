@@ -53,3 +53,8 @@ export function visibleIdAt(characters, index) {
   if (index < 0 || index >= visible.length) return null;
   return visible[index].id;
 }
+
+export function visibleIndexOfId(characters, id) {
+  const visible = characters.filter((c) => !c.deleted);
+  return visible.findIndex((c) => c.id === id);
+}

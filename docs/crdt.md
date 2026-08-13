@@ -47,3 +47,12 @@ Restoring to a past version sometimes needs to bring back a character
 that's since been deleted. Since tombstoned characters are never
 actually removed from the list, "undelete" just flips deleted back to
 false — the exact mirror of delete, and just as simple.
+
+## Translating CRDT operations into editor positions (Step 29)
+visibleIndexOfId finds a character's position among only the
+currently-visible characters, which is what lets a CRDT operation
+(id-based) become a plain-text offset CodeMirror can use in a
+transaction. Order matters: for delete, the visible index must be
+found BEFORE tombstoning (since a deleted character is no longer
+"visible"); for undelete, it must be found AFTER un-tombstoning, for
+the same reason in reverse.

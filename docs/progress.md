@@ -202,3 +202,12 @@ flow so no synchronization logic changed. Noted a real, undecided
 trade-off: remote updates can visibly move the local cursor, since
 content is still fully replaced on each incoming operation rather than
 using CodeMirror's lower-level transaction API.
+
+## Step 29: Precise Remote Updates via CodeMirror Transactions
+Replaced full-document value replacement for incoming remote
+operations with precise CodeMirror transactions (dispatching exact
+insert/delete changes at computed positions), fixing the cursor-jump
+issue flagged in Step 28. Added visibleIndexOfId to translate CRDT
+character ids into editor positions. Added an applyingRemoteRef guard
+to stop CodeMirror's onChange from re-sending our own remote-applied
+changes back to the server as duplicate operations.

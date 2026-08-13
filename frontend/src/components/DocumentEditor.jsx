@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { computeOperation } from "../utils/diff";
-import { insertOperation, deleteOperation, undeleteOperation, toText, visibleIdAt } from "../utils/crdt";
+import {
+  insertOperation,
+  deleteOperation,
+  undeleteOperation,
+  toText,
+  visibleIdAt,
+  visibleIndexOfId,
+} from "../utils/crdt";
 import HistoryPanel from "./HistoryPanel";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/documents";
@@ -22,10 +29,44 @@ function DocumentEditor({ documentId, token, userName }) {
   const typingTimeoutsRef = useRef({});
   const siteIdRef = useRef(crypto.randomUUID());
   const counterRef = useRef(0);
+  const viewRef = useRef(null);
+  const applyingRemoteRef = useRef(false);
 
   function nextId() {
     counterRef.current++;
     return `${siteIdRef.current}-${counterRef.current}`;
+  }
+
+  function dispatchRemoteChange(from, to, insert) {
+    const view = viewRef.current;
+    if (!view) return;
+
+    applyingRemoteRef.current = true;
+    view.dispatch({ changes: { from, to, insert } });
+    applyingRemoteRef.current = false;
+  }
+
+  function applyRemoteOperation(op) {
+    if (op.kind === "insert") {
+      insertOperation(charactersRef.current, op.character);
+      const index = visibleIndexOfId(charactersRef.current, op.character.id);
+      if (index !== -1) {
+        dispatchRemoteChange(index, index, op.character.char);
+      }
+    } else if (op.kind === "delete") {
+      const index = visibleIndexOfId(charactersRef.current, op.id);
+      deleteOperation(charactersRef.current, op.id);
+      if (index !== -1) {
+        dispatchRemoteChange(index, index + 1, "");
+      }
+    } else if (op.kind === "undelete") {
+      undeleteOperation(charactersRef.current, op.id);
+      const index = visibleIndexOfId(charactersRef.current, op.id);
+      const character = charactersRef.current.find((c) => c.id === op.id);
+      if (index !== -1 && character) {
+        dispatchRemoteChange(index, index, character.char);
+      }
+    }
   }
 
   useEffect(() => {
@@ -89,13 +130,7 @@ function DocumentEditor({ documentId, token, userName }) {
 
         if (data.type === "crdtOps") {
           for (const op of data.operations) {
-            if (op.kind === "insert") {
-              insertOperation(charactersRef.current, op.character);
-            } else if (op.kind === "delete") {
-              deleteOperation(charactersRef.current, op.id);
-            } else if (op.kind === "undelete") {
-              undeleteOperation(charactersRef.current, op.id);
-            }
+            applyRemoteOperation(op);
           }
           setContent(toText(charactersRef.current));
         }
@@ -150,6 +185,8 @@ function DocumentEditor({ documentId, token, userName }) {
   }, [documentId, token, userName]);
 
   function handleChange(newText) {
+    if (applyingRemoteRef.current) return;
+
     const oldText = toText(charactersRef.current);
     const diff = computeOperation(oldText, newText);
     const outgoingOps = [];
@@ -209,7 +246,14 @@ function DocumentEditor({ documentId, token, userName }) {
         </div>
 
         <div className="rounded-lg border border-slate-300 overflow-hidden">
-          <CodeMirror value={content} height="256px" onChange={handleChange} />
+          <CodeMirror
+            value={content}
+            height="256px"
+            onChange={handleChange}
+            onCreateEditor={(view) => {
+              viewRef.current = view;
+            }}
+          />
         </div>
       </div>
 

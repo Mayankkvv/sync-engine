@@ -167,3 +167,18 @@ arrives. A complete fix means applying incoming changes as CodeMirror
 transactions (which can preserve cursor position) instead of replacing
 the whole value — real, more advanced work, deliberately not done in
 Step 28, and a natural fit for a future cursor-position/presence step.
+
+## Direct CodeMirror transactions instead of value replacement for remote updates
+Setting the value prop to a new full string forces CodeMirror to
+reconcile the entire document, which loses meaningful cursor context.
+Dispatching precise {from, to, insert} transactions instead lets
+CodeMirror map the local cursor through the change correctly, the same
+as it does for a normal local edit. Local typing still goes through
+the value/onChange controlled pattern, since only remote updates
+caused the jarring jump.
+
+## applyingRemoteRef guard against echoed operations
+CodeMirror's onChange fires for programmatic dispatches too, not just
+user typing. Without suppressing it during our own remote-applied
+transactions, each incoming operation would have been immediately
+re-diffed and sent back to the server as a new, duplicate operation.

@@ -278,3 +278,23 @@ implementing a piece of the original tech stack, then fixed it later
 in a way that isolated the risk — because the data flow was already
 abstracted away from the specific input element, swapping to a real
 editor component touched almost nothing else in the app."
+
+
+## Fixing cursor-jump with precise editor transactions
+
+**What it is:** remote collaborative edits now apply as small, precise
+changes to the editor instead of replacing the whole document, so
+typing elsewhere doesn't move your cursor.
+
+**Why we built it this way:** a text editor's cursor is just a numeric
+offset — replacing the whole document invalidates that offset's
+meaning, since there's no way to know what moved. A precise transaction
+carries enough information (exactly what changed, and where) for the
+editor to correctly recalculate cursor position automatically.
+
+**How to explain it in an interview:** "This surfaced a real bug I had
+to catch: applying my own remote updates via dispatch also fired the
+editor's onChange handler, which would have re-sent those changes right
+back to the server as if the local user had typed them — an easy
+infinite-duplication bug to miss, caught by testing concurrent typing
+in two tabs at once rather than just single edits."
