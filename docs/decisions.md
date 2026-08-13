@@ -152,3 +152,18 @@ Step 26 test file separately; adding a third call site (this step's
 WebSocket test) was the trigger to consolidate it into one shared
 file, required wherever a direct MongoDB connection happens outside
 the normal server startup path.
+
+## CodeMirror was in the original stack but not used until Step 28
+The finalized stack specified CodeMirror from the start; a plain
+textarea was used instead from Step 9 through Step 27 without this
+being flagged as a deliberate simplification at the time. Corrected in
+Step 28 by swapping in @uiw/react-codemirror with an identical
+value/onChange interface, so no sync logic needed to change.
+
+## Cursor-jump-on-remote-update not solved yet
+Incoming operations still fully replace CodeMirror's value, which can
+visibly move the local cursor if you're typing when a remote edit
+arrives. A complete fix means applying incoming changes as CodeMirror
+transactions (which can preserve cursor position) instead of replacing
+the whole value — real, more advanced work, deliberately not done in
+Step 28, and a natural fit for a future cursor-position/presence step.

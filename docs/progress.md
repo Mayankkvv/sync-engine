@@ -193,3 +193,12 @@ verifies both the live cross-client broadcast and the final saved
 MongoDB content converge to the same deterministic result. Also
 consolidated the Step 3 DNS fix (previously duplicated in three
 places) into a single shared utils/forceDns.js.
+
+## Step 28: Real CodeMirror Editor (Closing a Stack Gap)
+Replaced the plain <textarea> with @uiw/react-codemirror, closing a
+gap against the original finalized stack (which specified CodeMirror
+from the start). Kept the exact same controlled value/onChange data
+flow so no synchronization logic changed. Noted a real, undecided
+trade-off: remote updates can visibly move the local cursor, since
+content is still fully replaced on each incoming operation rather than
+using CodeMirror's lower-level transaction API.

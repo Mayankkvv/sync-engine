@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import CodeMirror from "@uiw/react-codemirror";
 import { computeOperation } from "../utils/diff";
 import { insertOperation, deleteOperation, undeleteOperation, toText, visibleIdAt } from "../utils/crdt";
 import HistoryPanel from "./HistoryPanel";
@@ -148,8 +149,7 @@ function DocumentEditor({ documentId, token, userName }) {
     };
   }, [documentId, token, userName]);
 
-  function handleChange(e) {
-    const newText = e.target.value;
+  function handleChange(newText) {
     const oldText = toText(charactersRef.current);
     const diff = computeOperation(oldText, newText);
     const outgoingOps = [];
@@ -208,11 +208,9 @@ function DocumentEditor({ documentId, token, userName }) {
           </span>
         </div>
 
-        <textarea
-          value={content}
-          onChange={handleChange}
-          className="w-full h-64 rounded-lg border border-slate-300 p-3 text-slate-800 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
-        />
+        <div className="rounded-lg border border-slate-300 overflow-hidden">
+          <CodeMirror value={content} height="256px" onChange={handleChange} />
+        </div>
       </div>
 
       {showHistory && (

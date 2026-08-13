@@ -261,3 +261,20 @@ converged result in advance from the CRDT's tie-break rule, rather
 than just asserting 'both clients end up equal' — proving the test
 verifies a specific, deterministic outcome rather than just checking
 that nothing crashed."
+
+
+## Swapping the editor component without touching sync logic
+
+**What it is:** replaced a plain textarea with a real CodeMirror
+editor, with zero changes to the CRDT or WebSocket code.
+
+**Why it worked cleanly:** the change-handling function was always
+designed around "receive the new full text as a string," never
+anything textarea-specific — so swapping the UI layer underneath it
+was a true drop-in replacement, not a rewrite.
+
+**How to explain it in an interview:** "I was upfront that I'd missed
+implementing a piece of the original tech stack, then fixed it later
+in a way that isolated the risk — because the data flow was already
+abstracted away from the specific input element, swapping to a real
+editor component touched almost nothing else in the app."
