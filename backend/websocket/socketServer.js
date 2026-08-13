@@ -52,7 +52,11 @@ function getPresenceList(documentId) {
 }
 
 function broadcastPresence(documentId) {
-  broadcastToRoom(documentId, { type: "presence", documentId, users: getPresenceList(documentId) }, null);
+  broadcastToRoom(
+    documentId,
+    { type: "presence", documentId, users: getPresenceList(documentId) },
+    null,
+  );
 }
 
 function queueForDocument(documentId, task) {
@@ -62,7 +66,10 @@ function queueForDocument(documentId, task) {
     .catch(() => {})
     .then(task)
     .catch((error) => {
-      console.error(`Error processing operation for document ${documentId}:`, error.message);
+      console.error(
+        `Error processing operation for document ${documentId}:`,
+        error.message,
+      );
     });
 
   documentQueues.set(documentId, next);
@@ -75,17 +82,25 @@ async function handleJoin(parsed, ws) {
     const document = await Document.findById(parsed.documentId);
 
     if (!document || document.owner.toString() !== decoded.userId) {
-      ws.send(JSON.stringify({ type: "error", message: "Not authorized to view this document" }));
+      ws.send(
+        JSON.stringify({
+          type: "error",
+          message: "Not authorized to view this document",
+        }),
+      );
       return;
     }
 
-    ws.userId = decoded.userId;
+    ws.userId = parsed.userId || decoded.userId;
+    ws.authUserId = decoded.userId;
     ws.userName = parsed.name || "Anonymous";
     joinRoom(parsed.documentId, ws);
     console.log(`Client joined document ${parsed.documentId}`);
     broadcastPresence(parsed.documentId);
   } catch (error) {
-    ws.send(JSON.stringify({ type: "error", message: "Invalid or expired session" }));
+    ws.send(
+      JSON.stringify({ type: "error", message: "Invalid or expired session" }),
+    );
   }
 }
 
@@ -95,7 +110,9 @@ function setupWebSocket(server) {
   wss.on("connection", (ws) => {
     console.log("Client connected");
 
-    ws.send(JSON.stringify({ type: "welcome", message: "Connected to Sync Engine" }));
+    ws.send(
+      JSON.stringify({ type: "welcome", message: "Connected to Sync Engine" }),
+    );
 
     ws.on("message", (data) => {
       let parsed;
@@ -116,7 +133,11 @@ function setupWebSocket(server) {
 
         const { documentId, operations } = parsed;
 
-        broadcastToRoom(documentId, { type: "typing", documentId, userId: ws.userId, name: ws.userName }, ws);
+        broadcastToRoom(
+          documentId,
+          { type: "typing", documentId, userId: ws.userId, name: ws.userName },
+          ws,
+        );
 
         queueForDocument(documentId, async () => {
           const document = await Document.findById(documentId);
@@ -136,8 +157,28 @@ function setupWebSocket(server) {
 
           await OperationLog.create({ documentId, operations });
 
-          broadcastToRoom(documentId, { type: "crdtOps", documentId, operations }, ws);
+          broadcastToRoom(
+            documentId,
+            { type: "crdtOps", documentId, operations },
+            ws,
+          );
         });
+      }
+
+      if (parsed.type === "cursor") {
+        if (!ws.userId) return;
+
+        broadcastToRoom(
+          parsed.documentId,
+          {
+            type: "cursor",
+            documentId: parsed.documentId,
+            userId: ws.userId,
+            name: ws.userName,
+            position: parsed.position,
+          },
+          ws,
+        );
       }
     });
 

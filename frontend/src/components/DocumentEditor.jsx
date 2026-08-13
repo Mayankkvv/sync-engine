@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
+import { EditorView } from "@codemirror/view";
 import { computeOperation } from "../utils/diff";
 import {
   insertOperation,
@@ -9,6 +10,7 @@ import {
   visibleIdAt,
   visibleIndexOfId,
 } from "../utils/crdt";
+import { cursorField, setCursorsEffect, colorForUserId } from "../utils/cursorExtension";
 import HistoryPanel from "./HistoryPanel";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/documents";
@@ -31,10 +33,24 @@ function DocumentEditor({ documentId, token, userName }) {
   const counterRef = useRef(0);
   const viewRef = useRef(null);
   const applyingRemoteRef = useRef(false);
+  const remoteCursorsRef = useRef({});
 
   function nextId() {
     counterRef.current++;
     return `${siteIdRef.current}-${counterRef.current}`;
+  }
+
+  function updateCursorDecorations() {
+    const view = viewRef.current;
+    if (!view) return;
+
+    const docLength = view.state.doc.length;
+    const cursors = Object.values(remoteCursorsRef.current).map((cursor) => ({
+      ...cursor,
+      position: Math.min(cursor.position, docLength),
+    }));
+
+    view.dispatch({ effects: setCursorsEffect.of(cursors) });
   }
 
   function dispatchRemoteChange(from, to, insert) {
@@ -68,6 +84,23 @@ function DocumentEditor({ documentId, token, userName }) {
       }
     }
   }
+
+  const extensions = useMemo(
+    () => [
+      cursorField,
+      EditorView.updateListener.of((update) => {
+        if (!update.selectionSet) return;
+        if (applyingRemoteRef.current) return;
+
+        const position = update.state.selection.main.head;
+        const socket = socketRef.current;
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: "cursor", documentId, position }));
+        }
+      }),
+    ],
+    [documentId]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -137,6 +170,14 @@ function DocumentEditor({ documentId, token, userName }) {
 
         if (data.type === "presence") {
           setOnlineUsers(data.users);
+
+          const onlineIds = new Set(data.users.map((u) => u.userId));
+          for (const id of Object.keys(remoteCursorsRef.current)) {
+            if (!onlineIds.has(id)) {
+              delete remoteCursorsRef.current[id];
+            }
+          }
+          updateCursorDecorations();
         }
 
         if (data.type === "typing") {
@@ -157,6 +198,15 @@ function DocumentEditor({ documentId, token, userName }) {
               return updated;
             });
           }, 2000);
+        }
+
+        if (data.type === "cursor") {
+          remoteCursorsRef.current[data.userId] = {
+            name: data.name,
+            color: colorForUserId(data.userId),
+            position: data.position,
+          };
+          updateCursorDecorations();
         }
       };
 
@@ -249,6 +299,7 @@ function DocumentEditor({ documentId, token, userName }) {
           <CodeMirror
             value={content}
             height="256px"
+            extensions={extensions}
             onChange={handleChange}
             onCreateEditor={(view) => {
               viewRef.current = view;

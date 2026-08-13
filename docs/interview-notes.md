@@ -298,3 +298,20 @@ editor's onChange handler, which would have re-sent those changes right
 back to the server as if the local user had typed them — an easy
 infinite-duplication bug to miss, caught by testing concurrent typing
 in two tabs at once rather than just single edits."
+
+
+## Live cursor positions via CodeMirror decorations
+
+**What it is:** colored, named markers showing exactly where each
+connected collaborator's cursor currently sits in the document.
+
+**Why we built it this way:** CodeMirror already has a purpose-built
+system (decorations) for attaching visual elements to text positions
+that automatically stay correctly placed as the text changes — reusing
+that is far more robust than manually tracking pixel positions.
+
+**How to explain it in an interview:** "Cursor broadcasts reuse the
+exact same ephemeral, non-persisted messaging pattern as the typing
+indicator from Step 16 — I didn't build new infrastructure for this,
+just a new message type riding the same WebSocket room and the same
+'no need to save this, it's disposable' philosophy."

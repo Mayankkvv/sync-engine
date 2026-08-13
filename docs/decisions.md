@@ -182,3 +182,19 @@ CodeMirror's onChange fires for programmatic dispatches too, not just
 user typing. Without suppressing it during our own remote-applied
 transactions, each incoming operation would have been immediately
 re-diffed and sent back to the server as a new, duplicate operation.
+
+## CodeMirror decorations for cursors instead of a separate overlay
+Remote cursor markers are managed entirely inside CodeMirror's own
+decoration system (a StateField), rather than a separately positioned
+HTML overlay tracked with manual pixel math. Decorations automatically
+reposition themselves as the underlying text changes (via
+decorations.map(tr.changes)), which a hand-rolled overlay would have
+needed to replicate manually.
+
+## Cursor positions are approximate, not perfectly synchronized
+A broadcasted cursor position is a plain numeric offset. If the
+document changes significantly between a user moving their cursor and
+that update being received elsewhere, the marker can land slightly off
+from their real position until their next move re-syncs it. A fully
+precise version would need to transform stored positions through every
+intervening edit, which was intentionally not built here.

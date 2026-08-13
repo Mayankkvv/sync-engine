@@ -211,3 +211,13 @@ issue flagged in Step 28. Added visibleIndexOfId to translate CRDT
 character ids into editor positions. Added an applyingRemoteRef guard
 to stop CodeMirror's onChange from re-sending our own remote-applied
 changes back to the server as duplicate operations.
+
+## Step 30: Live Collaborator Cursors
+Added colored, named cursor markers showing where other connected
+users' cursors currently are, using a CodeMirror StateField/Decoration
+extension (cursorExtension.js). Cursor position broadcasts reuse the
+existing WebSocket room infrastructure (ephemeral, like typing
+indicators — no database write). Colors are deterministically derived
+per userId so they stay consistent across reconnects. Cursor markers
+are cleaned up automatically when a user disconnects, using the
+existing presence broadcast.

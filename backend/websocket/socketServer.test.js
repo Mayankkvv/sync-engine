@@ -107,3 +107,36 @@ test("two clients editing the same document converge, live and in the database",
   clientA.close();
   clientB.close();
 });
+
+test("cursor messages are broadcast to other clients with per-connection presence ids", async () => {
+  const clientA = new WebSocket(wsUrl);
+  const clientB = new WebSocket(wsUrl);
+
+  await Promise.all([waitForOpen(clientA), waitForOpen(clientB)]);
+
+  clientA.send(JSON.stringify({ type: "join", documentId, token, userId: "cursor-A", name: "Cursor A" }));
+  clientB.send(JSON.stringify({ type: "join", documentId, token, userId: "cursor-B", name: "Cursor B" }));
+
+  await Promise.all([
+    waitForMessage(clientA, (d) => d.type === "presence" && d.users.some((u) => u.userId === "cursor-B")),
+    waitForMessage(clientB, (d) => d.type === "presence" && d.users.some((u) => u.userId === "cursor-A")),
+  ]);
+
+  const bReceivesCursor = waitForMessage(
+    clientB,
+    (d) => d.type === "cursor" && d.userId === "cursor-A" && d.name === "Cursor A" && d.position === 7,
+  );
+
+  clientA.send(JSON.stringify({ type: "cursor", documentId, position: 7 }));
+
+  await bReceivesCursor;
+
+  const bLeaves = waitForMessage(
+    clientA,
+    (d) => d.type === "presence" && !d.users.some((u) => u.userId === "cursor-B"),
+  );
+
+  clientB.close();
+  await bLeaves;
+  clientA.close();
+});

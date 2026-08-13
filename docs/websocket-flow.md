@@ -75,3 +75,13 @@ document before adding them to the room. On failure, the server sends
 {"type": "error", "message": "..."} and does not join the room. The
 crdtOps handler also ignores any message from a connection that never
 successfully joined (no userId set on it).
+
+
+## Cursor protocol (new)
+{"type": "cursor", "documentId": "...", "position": N} — sent by a
+client whenever its local cursor/selection changes (not on every
+document edit). The server broadcasts it to the rest of the room as
+{"type": "cursor", "documentId", "userId", "name", "position"},
+excluding the sender. Purely ephemeral, like typing — no database
+write. Clients discard a user's last-known cursor position once that
+user's id no longer appears in a presence broadcast.
