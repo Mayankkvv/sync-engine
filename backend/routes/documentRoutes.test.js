@@ -1,9 +1,14 @@
+//require("dotenv").config();
+//const dns = require("dns");
+
+//dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
+//const request = require("supertest");
+
 require("dotenv").config();
-const dns = require("dns");
+require("../utils/forceDns");
 
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
-
-const request = require("supertest");
+const request = require("supertest");                                         
 const mongoose = require("mongoose");
 const app = require("../app");
 

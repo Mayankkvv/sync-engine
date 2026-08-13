@@ -40,3 +40,15 @@ and that PUT only updates fields actually sent (Step 25).
 ## Not yet tested
 WebSocket message handling (crdtOps, presence, typing) and the
 history/version/restore routes don't have automated tests yet.
+
+## WebSocket tests (websocket/socketServer.test.js)
+Starts a real server on an ephemeral port and connects two real
+WebSocket clients (simulating the same account on two devices, since
+only a document's owner can join it). Both send genuinely concurrent
+insert operations; the test verifies each client receives the other's
+broadcasted operation, and that the final saved document content in
+MongoDB matches the CRDT's deterministic convergence result.
+
+## Not yet tested
+Offline reconnection/merge behavior and presence/typing timeouts don't
+have automated tests yet — currently verified manually.

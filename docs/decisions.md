@@ -139,3 +139,16 @@ the request body, meaning a rename request sending only { title }
 would have overwritten content with undefined. Fixed by only including
 fields that are actually present in req.body before calling
 findByIdAndUpdate — caught while building the sidebar's rename feature.
+
+
+## Ephemeral port (listen(0)) for the WebSocket test server
+Using port 0 lets the OS assign any free port automatically, so the
+test never conflicts with a locally running dev server and works
+regardless of what's already running on the machine.
+
+## Consolidated the duplicated DNS fix into utils/forceDns.js
+The Step 3 DNS fix had been copy-pasted into config/db.js and the
+Step 26 test file separately; adding a third call site (this step's
+WebSocket test) was the trigger to consolidate it into one shared
+file, required wherever a direct MongoDB connection happens outside
+the normal server startup path.

@@ -185,3 +185,11 @@ tests against a dedicated MONGO_TEST_URI database, covering document
 CRUD, the "no token" rejection, the Step 22 ownership isolation check,
 and the Step 25 partial-update fix. All 15 tests (7 CRDT + 8 API) pass
 via npm test.
+
+## Step 27: WebSocket Integration Test
+Added a real end-to-end test: two live WebSocket clients join the same
+document, send genuinely concurrent insert operations, and the test
+verifies both the live cross-client broadcast and the final saved
+MongoDB content converge to the same deterministic result. Also
+consolidated the Step 3 DNS fix (previously duplicated in three
+places) into a single shared utils/forceDns.js.

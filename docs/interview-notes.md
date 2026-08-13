@@ -244,3 +244,20 @@ test cases — I wrote tests specifically for the two real bugs I'd
 already found and fixed by hand, so a regression in either one would
 be caught automatically instead of relying on me remembering to
 manually re-check old features every time I touch the code."
+
+## WebSocket integration testing
+
+**What it is:** an automated test that starts a real server, connects
+two real WebSocket clients, and proves concurrent operations converge
+correctly — both live (via broadcast) and at rest (in the database).
+
+**Why we built it this way:** unit-testing the CRDT algorithm in
+isolation doesn't prove the server's room/broadcast/save-queue
+pipeline actually behaves correctly under real concurrency — this
+test is the only one exercising that full real path automatically.
+
+**How to explain it in an interview:** "I predicted the exact
+converged result in advance from the CRDT's tie-break rule, rather
+than just asserting 'both clients end up equal' — proving the test
+verifies a specific, deterministic outcome rather than just checking
+that nothing crashed."
