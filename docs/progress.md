@@ -251,3 +251,10 @@ and a rate limiter (10 requests per 15 minutes per IP) on the auth
 routes specifically, making brute-force login/register attempts
 impractical. Added the missing backend/.env.example, matching the
 pattern already used in frontend/.env.example.
+
+## Step 35: Polished Root README.md
+Rewrote the top-level README.md (unchanged since Step 1's placeholder)
+into a real project showcase: live demo link, feature list, tech stack
+table, plain-text architecture diagram, local setup instructions, and
+links into docs/. Surfaced that docs/architecture.md was planned from
+the start but never actually created — a natural next step.
