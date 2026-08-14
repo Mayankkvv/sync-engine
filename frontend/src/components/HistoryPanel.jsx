@@ -73,8 +73,8 @@ function HistoryPanel({ documentId, token, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-6 z-50">
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg border border-slate-200 p-6 max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-3 md:p-6 z-50">
+      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg border border-slate-200 p-4 md:p-6 max-h-[85vh] md:max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-slate-800">Version History</h2>
           <button onClick={onClose} className="text-sm text-slate-500 hover:text-slate-800">
@@ -84,8 +84,8 @@ function HistoryPanel({ documentId, token, onClose }) {
 
         {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
 
-        <div className="flex-1 flex gap-4 overflow-hidden">
-          <div className="w-1/3 overflow-y-auto border-r border-slate-100 pr-3">
+        <div className="flex-1 flex flex-col md:flex-row gap-4 overflow-hidden">
+          <div className="w-full md:w-1/3 max-h-40 md:max-h-none overflow-y-auto border-b md:border-b-0 md:border-r border-slate-100 pb-3 md:pb-0 md:pr-3">
             {loading && <p className="text-sm text-slate-400">Loading...</p>}
 
             {!loading && logs.length === 0 && (

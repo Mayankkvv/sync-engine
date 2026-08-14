@@ -374,9 +374,9 @@ function DocumentEditor({ documentId, token, userName }) {
   }
 
   return (
-    <div className="flex-1 flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <div className="flex items-center justify-between mb-2">
+    <div className="flex-1 flex items-center justify-center p-3 md:p-6 min-w-0">
+      <div className="w-full max-w-2xl bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
+        <div className="flex items-center justify-between flex-wrap gap-y-1 mb-2">
           <h1 className="text-lg font-semibold text-slate-800 truncate">{title || "Untitled Document"}</h1>
           <div className="flex items-center gap-3 shrink-0">
             <button

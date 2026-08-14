@@ -235,3 +235,12 @@ component) and a genuine save/sync indicator backed by a new "saved"
 WebSocket acknowledgment sent from server to the originating client
 only, once its edit is actually persisted — replacing the previous
 plain connection-only status text with two distinct, accurate signals.
+
+## Step 33: Responsive Layout (Mobile/Tablet Sidebar Drawer)
+Made the sidebar a slide-out drawer with a backdrop on small screens
+(toggled via a new hamburger button in NavBar), using a single
+responsive element rather than separate mobile/desktop components.
+Fixed rename/delete buttons to use opacity instead of hover-only
+display, since hover doesn't exist on touch. Adjusted spacing in
+DocumentEditor and made HistoryPanel's two-column layout stack
+vertically on narrow screens.

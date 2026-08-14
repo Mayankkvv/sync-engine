@@ -9,6 +9,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
@@ -45,15 +46,21 @@ function App() {
 
   return (
     <div className="h-screen flex flex-col bg-slate-100">
-      <NavBar user={user} onLogout={handleLogout} />
+      <NavBar user={user} onLogout={handleLogout} onMenuClick={() => setSidebarOpen(true)} />
 
-      <div className="flex-1 flex">
-        <Sidebar token={token} selectedDocumentId={selectedDocumentId} onSelectDocument={setSelectedDocumentId} />
+      <div className="flex-1 flex relative overflow-hidden">
+        <Sidebar
+          token={token}
+          selectedDocumentId={selectedDocumentId}
+          onSelectDocument={setSelectedDocumentId}
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
 
         {selectedDocumentId ? (
           <DocumentEditor key={selectedDocumentId} documentId={selectedDocumentId} token={token} userName={user.name} />
         ) : (
-          <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+          <div className="flex-1 flex items-center justify-center text-slate-400 text-sm px-4 text-center">
             Select a document from the sidebar, or create a new one.
           </div>
         )}

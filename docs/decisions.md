@@ -214,3 +214,20 @@ under real failure conditions (slow save, dropped connection mid-save).
 A genuine server-sent "saved" message, tied to the actual completed
 database write inside the existing per-document queue, means the
 indicator is always telling the truth.
+
+
+## Single responsive Sidebar element instead of separate mobile/desktop components
+Rather than conditionally rendering two different sidebar
+implementations, one element uses Tailwind breakpoint prefixes
+(fixed+translate below md, static+always-visible at md and up) to
+behave correctly at every width. Less duplication, and the mobile
+drawer's open/close state naturally has no effect once desktop
+overrides take over.
+
+## opacity-based hover reveal instead of display-based, for touch compatibility
+The original hidden/group-hover:flex pattern for row actions relies on
+a hover state that doesn't exist on touchscreens, making those buttons
+permanently unreachable on mobile. Switched to always-present
+opacity-100, faded via md:opacity-0 md:group-hover:opacity-100 only at
+desktop widths — avoids conflicting display utilities across
+breakpoints entirely.
