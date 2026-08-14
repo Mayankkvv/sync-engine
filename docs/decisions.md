@@ -198,3 +198,11 @@ that update being received elsewhere, the marker can land slightly off
 from their real position until their next move re-syncs it. A fully
 precise version would need to transform stored positions through every
 intervening edit, which was intentionally not built here.
+
+## Avatar dropdown with click-outside-to-close instead of a separate settings page
+A lightweight dropdown menu keeps account info and logout accessible
+from anywhere in the app without a route change or extra page. The
+click-outside pattern (a ref checked against the click target on a
+document-level listener) is a common, reusable technique worth
+recognizing by name rather than reinventing differently each time it's
+needed.

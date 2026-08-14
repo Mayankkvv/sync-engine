@@ -221,3 +221,10 @@ indicators — no database write). Colors are deterministically derived
 per userId so they stay consistent across reconnects. Cursor markers
 are cleaned up automatically when a user disconnects, using the
 existing presence broadcast.
+
+## Step 31: Navigation Bar and User Profile Menu
+Replaced the plain "Signed in as X / Log out" bar with a real NavBar
+component: a small logo mark plus app name on the left, and an
+avatar-initials button on the right that opens a dropdown showing
+name, email, and log out, using a click-outside-to-close pattern via a
+ref and a document-level mousedown listener.
