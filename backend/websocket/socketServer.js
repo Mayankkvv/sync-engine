@@ -162,6 +162,15 @@ function setupWebSocket(server) {
             { type: "crdtOps", documentId, operations },
             ws,
           );
+          if (ws.readyState === ws.OPEN) {
+            ws.send(
+              JSON.stringify({
+                type: "saved",
+                documentId,
+                savedAt: new Date().toISOString(),
+              }),
+            );
+          }
         });
       }
 

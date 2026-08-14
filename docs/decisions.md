@@ -206,3 +206,11 @@ click-outside pattern (a ref checked against the click target on a
 document-level listener) is a common, reusable technique worth
 recognizing by name rather than reinventing differently each time it's
 needed.
+
+## Save status backed by a real server acknowledgment, not a timer
+An earlier, simpler option would have been an optimistic client-side
+timer ("show Saving for N ms, then assume Saved"). That would lie
+under real failure conditions (slow save, dropped connection mid-save).
+A genuine server-sent "saved" message, tied to the actual completed
+database write inside the existing per-document queue, means the
+indicator is always telling the truth.

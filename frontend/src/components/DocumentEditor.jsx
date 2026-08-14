@@ -12,14 +12,22 @@ import {
 } from "../utils/crdt";
 import { cursorField, setCursorsEffect, colorForUserId } from "../utils/cursorExtension";
 import HistoryPanel from "./HistoryPanel";
+import StatusIndicator from "./StatusIndicator";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/documents";
 const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:5000";
+
+function connectionColor(status) {
+  if (status.startsWith("Connected")) return "green";
+  if (status.startsWith("Connecting")) return "yellow";
+  return "red";
+}
 
 function DocumentEditor({ documentId, token, userName }) {
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState("Loading...");
+  const [saveStatus, setSaveStatus] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsers, setTypingUsers] = useState(new Map());
   const [showHistory, setShowHistory] = useState(false);
@@ -105,23 +113,80 @@ function DocumentEditor({ documentId, token, userName }) {
   useEffect(() => {
     let cancelled = false;
 
+    function browserIsOffline() {
+      return typeof navigator !== "undefined" && navigator.onLine === false;
+    }
+
+    function clearRealtimePresence() {
+      setOnlineUsers([]);
+      setTypingUsers(new Map());
+      remoteCursorsRef.current = {};
+      updateCursorDecorations();
+    }
+
+    function markDisconnected(label) {
+      setStatus(label);
+      clearRealtimePresence();
+    }
+
+    function scheduleReconnect(delay = 2000) {
+      if (cancelled || reconnectTimeoutRef.current) return;
+
+      reconnectTimeoutRef.current = setTimeout(() => {
+        reconnectTimeoutRef.current = null;
+        connect();
+      }, delay);
+    }
+
+    function closeSocket(socket) {
+      if (!socket) return;
+
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        socket.close();
+      }
+    }
+
     function connect() {
       if (cancelled) return;
+
+      const existingSocket = socketRef.current;
+      if (
+        existingSocket &&
+        (existingSocket.readyState === WebSocket.OPEN || existingSocket.readyState === WebSocket.CONNECTING)
+      ) {
+        return;
+      }
+
+      if (browserIsOffline()) {
+        markDisconnected("Offline - retrying...");
+        scheduleReconnect();
+        return;
+      }
 
       const socket = new WebSocket(WS_URL);
       socketRef.current = socket;
       setStatus("Connecting...");
 
       socket.onopen = async () => {
-        if (cancelled) return;
+        if (cancelled || socketRef.current !== socket) return;
 
         socket.send(
           JSON.stringify({ type: "join", documentId, token, userId: siteIdRef.current, name: userName })
         );
 
-        const res = await fetch(`${API_URL}/${documentId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        let res;
+        try {
+          res = await fetch(`${API_URL}/${documentId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        } catch {
+          if (cancelled || socketRef.current !== socket) return;
+
+          markDisconnected(browserIsOffline() ? "Offline - retrying..." : "Disconnected - retrying...");
+          closeSocket(socket);
+          scheduleReconnect();
+          return;
+        }
 
         if (!res.ok) {
           setStatus("Not authorized");
@@ -129,7 +194,7 @@ function DocumentEditor({ documentId, token, userName }) {
         }
 
         const latestDoc = await res.json();
-        if (cancelled) return;
+        if (cancelled || socketRef.current !== socket) return;
 
         charactersRef.current = latestDoc.characters || [];
         setTitle(latestDoc.title);
@@ -147,18 +212,26 @@ function DocumentEditor({ documentId, token, userName }) {
 
         setContent(toText(charactersRef.current));
         setStatus("Connected");
+        setSaveStatus("saved");
 
         if (queued.length > 0) {
+          setSaveStatus("saving");
           socket.send(JSON.stringify({ type: "crdtOps", documentId, operations: queued }));
         }
       };
 
       socket.onmessage = (event) => {
+        if (socketRef.current !== socket) return;
+
         const data = JSON.parse(event.data);
 
         if (data.type === "error") {
           setStatus(data.message);
           return;
+        }
+
+        if (data.type === "saved") {
+          setSaveStatus("saved");
         }
 
         if (data.type === "crdtOps") {
@@ -210,19 +283,49 @@ function DocumentEditor({ documentId, token, userName }) {
         }
       };
 
+      socket.onerror = () => {
+        if (cancelled || socketRef.current !== socket) return;
+        setStatus(browserIsOffline() ? "Offline - retrying..." : "Disconnected - retrying...");
+      };
+
       socket.onclose = () => {
+        if (socketRef.current === socket) {
+          socketRef.current = null;
+        }
         if (cancelled) return;
-        setStatus("Disconnected — retrying...");
-        reconnectTimeoutRef.current = setTimeout(() => connect(), 2000);
+        markDisconnected(browserIsOffline() ? "Offline - retrying..." : "Disconnected - retrying...");
+        scheduleReconnect();
       };
     }
+
+    function handleBrowserOffline() {
+      if (cancelled) return;
+      markDisconnected("Offline - retrying...");
+      closeSocket(socketRef.current);
+      scheduleReconnect();
+    }
+
+    function handleBrowserOnline() {
+      if (cancelled) return;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      connect();
+    }
+
+    window.addEventListener("offline", handleBrowserOffline);
+    window.addEventListener("online", handleBrowserOnline);
 
     connect();
 
     return () => {
       cancelled = true;
+      window.removeEventListener("offline", handleBrowserOffline);
+      window.removeEventListener("online", handleBrowserOnline);
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
       for (const timeoutId of Object.values(typingTimeoutsRef.current)) {
         clearTimeout(timeoutId);
@@ -263,6 +366,7 @@ function DocumentEditor({ documentId, token, userName }) {
 
     const socket = socketRef.current;
     if (socket && socket.readyState === WebSocket.OPEN && outgoingOps.length > 0) {
+      setSaveStatus("saving");
       socket.send(JSON.stringify({ type: "crdtOps", documentId, operations: outgoingOps }));
     } else if (outgoingOps.length > 0) {
       pendingOpsRef.current.push(...outgoingOps);
@@ -281,7 +385,12 @@ function DocumentEditor({ documentId, token, userName }) {
             >
               History
             </button>
-            <span className="text-sm text-slate-500">{status}</span>
+            <StatusIndicator label={status} color={connectionColor(status)} />
+            {saveStatus && (
+              <span className="text-xs text-slate-400">
+                {saveStatus === "saving" ? "Saving..." : "Saved"}
+              </span>
+            )}
           </div>
         </div>
 

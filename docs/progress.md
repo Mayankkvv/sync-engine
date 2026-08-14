@@ -228,3 +228,10 @@ component: a small logo mark plus app name on the left, and an
 avatar-initials button on the right that opens a dropdown showing
 name, email, and log out, using a click-outside-to-close pattern via a
 ref and a document-level mousedown listener.
+
+## Step 32: Real Connection and Save Status Indicators
+Added a colored-dot connection status indicator (StatusIndicator
+component) and a genuine save/sync indicator backed by a new "saved"
+WebSocket acknowledgment sent from server to the originating client
+only, once its edit is actually persisted — replacing the previous
+plain connection-only status text with two distinct, accurate signals.

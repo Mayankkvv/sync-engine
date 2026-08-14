@@ -85,3 +85,11 @@ document edit). The server broadcasts it to the rest of the room as
 excluding the sender. Purely ephemeral, like typing — no database
 write. Clients discard a user's last-known cursor position once that
 user's id no longer appears in a presence broadcast.
+
+## Save acknowledgment (new)
+{"type": "saved", "documentId": "...", "savedAt": "..."} — sent
+directly to the client whose crdtOps batch was just successfully saved
+and logged, right after the existing broadcast to the rest of the
+room. Unlike presence/typing/crdtOps, this is sent to exactly one
+client (the sender), never broadcast, since it only has meaning to
+whoever's edit it confirms.
