@@ -231,3 +231,11 @@ permanently unreachable on mobile. Switched to always-present
 opacity-100, faded via md:opacity-0 md:group-hover:opacity-100 only at
 desktop widths — avoids conflicting display utilities across
 breakpoints entirely.
+
+## Rate limiting scoped to auth routes only, not the whole API
+Login/register are the routes where brute-force guessing is a
+meaningful risk (guessing a password). Document routes are already
+protected by requiring a valid JWT per request, which is a much
+stronger barrier than rate limiting alone — so the limiter was applied
+narrowly rather than globally, avoiding unnecessary friction on normal
+document usage.

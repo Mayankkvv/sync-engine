@@ -244,3 +244,10 @@ Fixed rename/delete buttons to use opacity instead of hover-only
 display, since hover doesn't exist on touch. Adjusted spacing in
 DocumentEditor and made HistoryPanel's two-column layout stack
 vertically on narrow screens.
+
+## Step 34: Security Hardening (Helmet + Rate Limiting)
+Added helmet() for standard HTTP security headers on every response,
+and a rate limiter (10 requests per 15 minutes per IP) on the auth
+routes specifically, making brute-force login/register attempts
+impractical. Added the missing backend/.env.example, matching the
+pattern already used in frontend/.env.example.

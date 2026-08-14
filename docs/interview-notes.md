@@ -315,3 +315,20 @@ exact same ephemeral, non-persisted messaging pattern as the typing
 indicator from Step 16 — I didn't build new infrastructure for this,
 just a new message type riding the same WebSocket room and the same
 'no need to save this, it's disposable' philosophy."
+
+## Basic production hardening (Helmet + rate limiting)
+
+**What it is:** standard HTTP security headers on every response, plus
+a request-rate limit specifically on login and registration.
+
+**Why we built it this way:** by this point every feature from the
+spec was complete — this is the natural "make it production-ready"
+phase, and these are two of the smallest, highest-value, most
+standard steps toward that on any real API.
+
+**How to explain it in an interview:** "I scoped rate limiting
+specifically to the auth endpoints rather than applying it globally —
+document routes are already protected by JWT verification, which is a
+stronger guarantee than a request-count limit, so the limiter targets
+the one place (login) where brute-force guessing is actually the
+relevant threat."

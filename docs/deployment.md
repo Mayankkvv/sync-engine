@@ -60,3 +60,8 @@ Added as an environment variable on Render, separate from the value in
 local .env. Auth (Steps 21-22) was built after the initial backend
 deployment (Step 18), so this was a real gap until fixed here — the
 live backend had no secret to sign or verify tokens with.
+
+## Security hardening (Step 34)
+helmet() and rate limiting on auth routes require no deployment
+configuration changes — they're active as soon as the code deploys.
+No new environment variables needed.
