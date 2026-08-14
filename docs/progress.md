@@ -258,3 +258,11 @@ into a real project showcase: live demo link, feature list, tech stack
 table, plain-text architecture diagram, local setup instructions, and
 links into docs/. Surfaced that docs/architecture.md was planned from
 the start but never actually created — a natural next step.
+
+## Step 36: Created docs/architecture.md
+Wrote the top-level architecture document referenced by the README
+but never actually created — folder structure, two full data-flow
+traces (opening a document, making a live edit), how the frontend
+talks to the backend, how the backend talks to MongoDB, and how
+WebSockets share the same HTTP server as Express. Fixes the one
+broken link left over from Step 35.
