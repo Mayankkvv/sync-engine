@@ -332,3 +332,21 @@ document routes are already protected by JWT verification, which is a
 stronger guarantee than a request-count limit, so the limiter targets
 the one place (login) where brute-force guessing is actually the
 relevant threat."
+
+## Invite-based collaboration (owner vs. collaborator)
+
+**What it is:** document owners can invite specific existing users by
+email to edit their document, with a second, narrower permission tier
+below full ownership.
+
+**Why we built it this way:** the project already had strong,
+independently-enforced single-owner isolation (Step 22) — this step
+had to extend that in two places at once (REST and WebSocket) without
+weakening either, which is exactly the kind of coordinated change
+real access-control systems require.
+
+**How to explain it in an interview:** "I split authorization into two
+explicit tiers with two separate helper functions, rather than
+relaxing a single check — so it's structurally impossible for a
+collaborator to accidentally get owner-level actions like delete,
+since those routes never call the relaxed helper at all."

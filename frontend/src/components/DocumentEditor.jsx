@@ -12,6 +12,7 @@ import {
 } from "../utils/crdt";
 import { cursorField, setCursorsEffect, colorForUserId } from "../utils/cursorExtension";
 import HistoryPanel from "./HistoryPanel";
+import SharePanel from "./SharePanel";
 import StatusIndicator from "./StatusIndicator";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/documents";
@@ -23,7 +24,7 @@ function connectionColor(status) {
   return "red";
 }
 
-function DocumentEditor({ documentId, token, userName }) {
+function DocumentEditor({ documentId, token, userName, currentUserId }) {
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState("Loading...");
@@ -31,6 +32,7 @@ function DocumentEditor({ documentId, token, userName }) {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsers, setTypingUsers] = useState(new Map());
   const [showHistory, setShowHistory] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const socketRef = useRef(null);
   const charactersRef = useRef([]);
@@ -113,80 +115,23 @@ function DocumentEditor({ documentId, token, userName }) {
   useEffect(() => {
     let cancelled = false;
 
-    function browserIsOffline() {
-      return typeof navigator !== "undefined" && navigator.onLine === false;
-    }
-
-    function clearRealtimePresence() {
-      setOnlineUsers([]);
-      setTypingUsers(new Map());
-      remoteCursorsRef.current = {};
-      updateCursorDecorations();
-    }
-
-    function markDisconnected(label) {
-      setStatus(label);
-      clearRealtimePresence();
-    }
-
-    function scheduleReconnect(delay = 2000) {
-      if (cancelled || reconnectTimeoutRef.current) return;
-
-      reconnectTimeoutRef.current = setTimeout(() => {
-        reconnectTimeoutRef.current = null;
-        connect();
-      }, delay);
-    }
-
-    function closeSocket(socket) {
-      if (!socket) return;
-
-      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-        socket.close();
-      }
-    }
-
     function connect() {
       if (cancelled) return;
-
-      const existingSocket = socketRef.current;
-      if (
-        existingSocket &&
-        (existingSocket.readyState === WebSocket.OPEN || existingSocket.readyState === WebSocket.CONNECTING)
-      ) {
-        return;
-      }
-
-      if (browserIsOffline()) {
-        markDisconnected("Offline - retrying...");
-        scheduleReconnect();
-        return;
-      }
 
       const socket = new WebSocket(WS_URL);
       socketRef.current = socket;
       setStatus("Connecting...");
 
       socket.onopen = async () => {
-        if (cancelled || socketRef.current !== socket) return;
+        if (cancelled) return;
 
         socket.send(
           JSON.stringify({ type: "join", documentId, token, userId: siteIdRef.current, name: userName })
         );
 
-        let res;
-        try {
-          res = await fetch(`${API_URL}/${documentId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        } catch {
-          if (cancelled || socketRef.current !== socket) return;
-
-          markDisconnected(browserIsOffline() ? "Offline - retrying..." : "Disconnected - retrying...");
-          closeSocket(socket);
-          scheduleReconnect();
-          return;
-        }
+        const res = await fetch(`${API_URL}/${documentId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         if (!res.ok) {
           setStatus("Not authorized");
@@ -194,7 +139,7 @@ function DocumentEditor({ documentId, token, userName }) {
         }
 
         const latestDoc = await res.json();
-        if (cancelled || socketRef.current !== socket) return;
+        if (cancelled) return;
 
         charactersRef.current = latestDoc.characters || [];
         setTitle(latestDoc.title);
@@ -221,8 +166,6 @@ function DocumentEditor({ documentId, token, userName }) {
       };
 
       socket.onmessage = (event) => {
-        if (socketRef.current !== socket) return;
-
         const data = JSON.parse(event.data);
 
         if (data.type === "error") {
@@ -283,49 +226,19 @@ function DocumentEditor({ documentId, token, userName }) {
         }
       };
 
-      socket.onerror = () => {
-        if (cancelled || socketRef.current !== socket) return;
-        setStatus(browserIsOffline() ? "Offline - retrying..." : "Disconnected - retrying...");
-      };
-
       socket.onclose = () => {
-        if (socketRef.current === socket) {
-          socketRef.current = null;
-        }
         if (cancelled) return;
-        markDisconnected(browserIsOffline() ? "Offline - retrying..." : "Disconnected - retrying...");
-        scheduleReconnect();
+        setStatus("Disconnected — retrying...");
+        reconnectTimeoutRef.current = setTimeout(() => connect(), 2000);
       };
     }
-
-    function handleBrowserOffline() {
-      if (cancelled) return;
-      markDisconnected("Offline - retrying...");
-      closeSocket(socketRef.current);
-      scheduleReconnect();
-    }
-
-    function handleBrowserOnline() {
-      if (cancelled) return;
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
-      connect();
-    }
-
-    window.addEventListener("offline", handleBrowserOffline);
-    window.addEventListener("online", handleBrowserOnline);
 
     connect();
 
     return () => {
       cancelled = true;
-      window.removeEventListener("offline", handleBrowserOffline);
-      window.removeEventListener("online", handleBrowserOnline);
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
       }
       for (const timeoutId of Object.values(typingTimeoutsRef.current)) {
         clearTimeout(timeoutId);
@@ -380,6 +293,12 @@ function DocumentEditor({ documentId, token, userName }) {
           <h1 className="text-lg font-semibold text-slate-800 truncate">{title || "Untitled Document"}</h1>
           <div className="flex items-center gap-3 shrink-0">
             <button
+              onClick={() => setShowShare(true)}
+              className="text-sm text-slate-500 hover:text-slate-800"
+            >
+              Share
+            </button>
+            <button
               onClick={() => setShowHistory(true)}
               className="text-sm text-slate-500 hover:text-slate-800"
             >
@@ -419,6 +338,15 @@ function DocumentEditor({ documentId, token, userName }) {
 
       {showHistory && (
         <HistoryPanel documentId={documentId} token={token} onClose={() => setShowHistory(false)} />
+      )}
+
+      {showShare && (
+        <SharePanel
+          documentId={documentId}
+          token={token}
+          currentUserId={currentUserId}
+          onClose={() => setShowShare(false)}
+        />
       )}
     </div>
   );

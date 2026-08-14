@@ -1,10 +1,12 @@
 const express = require("express");
 const Document = require("../models/Document");
+const User = require("../models/User");
 const OperationLog = require("../models/OperationLog");
 const reconstructAsOf = require("../services/reconstructDocument");
 const { toText, deleteOperation, undeleteOperation } = require("../crdt/crdt");
 const { queueForDocument, broadcastToRoom } = require("../websocket/socketServer");
 const requireAuth = require("../middleware/auth");
+const { findUserByEmail, normalizeEmail } = require("../utils/email");
 
 const router = express.Router();
 
@@ -18,11 +20,37 @@ async function getOwnedDocument(id, userId) {
   return document;
 }
 
+async function getAccessibleDocument(id, userId) {
+  const document = await Document.findById(id);
+  if (!document) return null;
+
+  const isOwner = document.owner.toString() === userId;
+  const isCollaborator = document.collaborators.some((c) => c.toString() === userId);
+
+  if (!isOwner && !isCollaborator) return null;
+
+  return document;
+}
+
+function getOwnerId(document) {
+  const owner = document.owner;
+  if (!owner) return "";
+  return (owner._id || owner.id || owner).toString();
+}
+
+function withAccessMetadata(document, userId) {
+  const data = typeof document.toObject === "function" ? document.toObject() : document;
+  return {
+    ...data,
+    isOwner: getOwnerId(document) === userId,
+  };
+}
+
 router.post("/", async (req, res) => {
   try {
     const { title, content } = req.body;
     const document = await Document.create({ title, content, owner: req.userId });
-    res.status(201).json(document);
+    res.status(201).json(withAccessMetadata(document, req.userId));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -30,8 +58,10 @@ router.post("/", async (req, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const documents = await Document.find({ owner: req.userId }).sort({ updatedAt: -1 });
-    res.json(documents);
+    const documents = await Document.find({
+      $or: [{ owner: req.userId }, { collaborators: req.userId }],
+    }).sort({ updatedAt: -1 });
+    res.json(documents.map((document) => withAccessMetadata(document, req.userId)));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -39,11 +69,16 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const document = await getOwnedDocument(req.params.id, req.userId);
+    const document = await getAccessibleDocument(req.params.id, req.userId);
     if (!document) {
       return res.status(404).json({ error: "Document not found" });
     }
-    res.json(document);
+
+    const populated = await Document.findById(req.params.id)
+      .populate("owner", "name email")
+      .populate("collaborators", "name email");
+
+    res.json(withAccessMetadata(populated, req.userId));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -51,7 +86,7 @@ router.get("/:id", async (req, res) => {
 
 router.get("/:id/history", async (req, res) => {
   try {
-    const document = await getOwnedDocument(req.params.id, req.userId);
+    const document = await getAccessibleDocument(req.params.id, req.userId);
     if (!document) {
       return res.status(404).json({ error: "Document not found" });
     }
@@ -65,7 +100,7 @@ router.get("/:id/history", async (req, res) => {
 
 router.get("/:id/version/:logId", async (req, res) => {
   try {
-    const document = await getOwnedDocument(req.params.id, req.userId);
+    const document = await getAccessibleDocument(req.params.id, req.userId);
     if (!document) {
       return res.status(404).json({ error: "Document not found" });
     }
@@ -85,8 +120,8 @@ router.get("/:id/version/:logId", async (req, res) => {
 
 router.post("/:id/restore/:logId", async (req, res) => {
   try {
-    const owned = await getOwnedDocument(req.params.id, req.userId);
-    if (!owned) {
+    const accessible = await getAccessibleDocument(req.params.id, req.userId);
+    if (!accessible) {
       return res.status(404).json({ error: "Document not found" });
     }
 
@@ -147,8 +182,8 @@ router.post("/:id/restore/:logId", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    const owned = await getOwnedDocument(req.params.id, req.userId);
-    if (!owned) {
+    const accessible = await getAccessibleDocument(req.params.id, req.userId);
+    if (!accessible) {
       return res.status(404).json({ error: "Document not found" });
     }
 
@@ -157,7 +192,7 @@ router.put("/:id", async (req, res) => {
     if (req.body.content !== undefined) updates.content = req.body.content;
 
     const document = await Document.findByIdAndUpdate(req.params.id, updates, { new: true });
-    res.json(document);
+    res.json(withAccessMetadata(document, req.userId));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -172,6 +207,63 @@ router.delete("/:id", async (req, res) => {
 
     await Document.findByIdAndDelete(req.params.id);
     res.json({ message: "Document deleted" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/:id/collaborators", async (req, res) => {
+  try {
+    const document = await getOwnedDocument(req.params.id, req.userId);
+    if (!document) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    const email = normalizeEmail(req.body.email);
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const invitedUser = await findUserByEmail(User, email);
+    if (!invitedUser) {
+      return res.status(404).json({ error: "No account found with that email" });
+    }
+
+    if (invitedUser._id.toString() === req.userId) {
+      return res.status(400).json({ error: "You already own this document" });
+    }
+
+    const alreadyCollaborator = document.collaborators.some(
+      (id) => id.toString() === invitedUser._id.toString()
+    );
+    if (alreadyCollaborator) {
+      return res.status(400).json({ error: "This person already has access" });
+    }
+
+    document.collaborators.push(invitedUser._id);
+    await document.save();
+
+    const populated = await Document.findById(document._id).populate("collaborators", "name email");
+
+    res.json({ collaborators: populated.collaborators });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete("/:id/collaborators/:collaboratorId", async (req, res) => {
+  try {
+    const document = await getOwnedDocument(req.params.id, req.userId);
+    if (!document) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    document.collaborators = document.collaborators.filter(
+      (id) => id.toString() !== req.params.collaboratorId
+    );
+    await document.save();
+
+    res.json({ message: "Collaborator removed" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

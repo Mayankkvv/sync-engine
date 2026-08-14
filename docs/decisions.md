@@ -239,3 +239,27 @@ protected by requiring a valid JWT per request, which is a much
 stronger barrier than rate limiting alone — so the limiter was applied
 narrowly rather than globally, avoiding unnecessary friction on normal
 document usage.
+
+## Two access-check helpers instead of one relaxed check
+getOwnedDocument (strict) and getAccessibleDocument (owner or
+collaborator) both exist, rather than relaxing the original helper
+everywhere. Deleting a document and managing its collaborators stay
+owner-only; viewing, editing, history, and restoring are available to
+collaborators too — a deliberate two-tier permission model, not just
+"everyone in equals full control."
+
+## Invites require an existing account, no invite-by-email-only flow
+Sharing looks up the invited person by email and fails clearly if no
+account exists, rather than supporting inviting someone who hasn't
+registered yet (e.g., emailing them a signup link). Kept simple and
+consistent with "don't over-engineer" — a real product would likely
+add that flow, but it's a genuinely separate feature (invitation
+emails, pending-invite state) rather than a small addition.
+
+## Sidebar doesn't live-update when you're newly shared a document
+Consistent with the same known gap from Step 20 (the list only
+fetches once, on mount) — being freshly invited to a document doesn't
+make it appear until the page is refreshed or reopened. Not solved
+here; would need either polling or a way to notify a specific
+account's active sessions, which the current WebSocket room model
+(scoped per-document, not per-account) doesn't support directly.

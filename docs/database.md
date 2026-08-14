@@ -51,3 +51,8 @@ Created by backend/models/User.js. Fields:
 - email (String, unique)
 - passwordHash (String — bcrypt hash, never the plain password)
 - createdAt, updatedAt (automatic)
+
+### documents (updated)
+Added "collaborators": an array of ObjectIds referencing users,
+alongside the existing single "owner". A document is accessible to
+its owner and every id in this array.

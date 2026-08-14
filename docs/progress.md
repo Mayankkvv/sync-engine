@@ -266,3 +266,16 @@ traces (opening a document, making a live edit), how the frontend
 talks to the backend, how the backend talks to MongoDB, and how
 WebSockets share the same HTTP server as Express. Fixes the one
 broken link left over from Step 35.
+
+## Step 37: Invite-Based Document Collaborators
+Added a "collaborators" field to Document, alongside the existing
+single "owner". Split document access into two helpers:
+getAccessibleDocument (owner OR collaborator — used for view, edit,
+history, restore) and getOwnedDocument (owner only — used for delete
+and managing collaborators). Updated the WebSocket join handshake to
+check the same owner-or-collaborator logic, matching the REST routes.
+Added POST/DELETE /:id/collaborators to invite/remove people by email
+(must already have an account), and a Share panel in the frontend
+(invite form + people list for the owner, read-only list for
+collaborators). The document list route now returns documents you
+own or have been given access to.

@@ -52,11 +52,7 @@ function getPresenceList(documentId) {
 }
 
 function broadcastPresence(documentId) {
-  broadcastToRoom(
-    documentId,
-    { type: "presence", documentId, users: getPresenceList(documentId) },
-    null,
-  );
+  broadcastToRoom(documentId, { type: "presence", documentId, users: getPresenceList(documentId) }, null);
 }
 
 function queueForDocument(documentId, task) {
@@ -66,10 +62,7 @@ function queueForDocument(documentId, task) {
     .catch(() => {})
     .then(task)
     .catch((error) => {
-      console.error(
-        `Error processing operation for document ${documentId}:`,
-        error.message,
-      );
+      console.error(`Error processing operation for document ${documentId}:`, error.message);
     });
 
   documentQueues.set(documentId, next);
@@ -81,13 +74,16 @@ async function handleJoin(parsed, ws) {
     const decoded = jwt.verify(parsed.token, process.env.JWT_SECRET);
     const document = await Document.findById(parsed.documentId);
 
-    if (!document || document.owner.toString() !== decoded.userId) {
-      ws.send(
-        JSON.stringify({
-          type: "error",
-          message: "Not authorized to view this document",
-        }),
-      );
+    if (!document) {
+      ws.send(JSON.stringify({ type: "error", message: "Not authorized to view this document" }));
+      return;
+    }
+
+    const isOwner = document.owner.toString() === decoded.userId;
+    const isCollaborator = document.collaborators.some((id) => id.toString() === decoded.userId);
+
+    if (!isOwner && !isCollaborator) {
+      ws.send(JSON.stringify({ type: "error", message: "Not authorized to view this document" }));
       return;
     }
 
@@ -98,9 +94,7 @@ async function handleJoin(parsed, ws) {
     console.log(`Client joined document ${parsed.documentId}`);
     broadcastPresence(parsed.documentId);
   } catch (error) {
-    ws.send(
-      JSON.stringify({ type: "error", message: "Invalid or expired session" }),
-    );
+    ws.send(JSON.stringify({ type: "error", message: "Invalid or expired session" }));
   }
 }
 
@@ -110,9 +104,7 @@ function setupWebSocket(server) {
   wss.on("connection", (ws) => {
     console.log("Client connected");
 
-    ws.send(
-      JSON.stringify({ type: "welcome", message: "Connected to Sync Engine" }),
-    );
+    ws.send(JSON.stringify({ type: "welcome", message: "Connected to Sync Engine" }));
 
     ws.on("message", (data) => {
       let parsed;
@@ -133,11 +125,7 @@ function setupWebSocket(server) {
 
         const { documentId, operations } = parsed;
 
-        broadcastToRoom(
-          documentId,
-          { type: "typing", documentId, userId: ws.userId, name: ws.userName },
-          ws,
-        );
+        broadcastToRoom(documentId, { type: "typing", documentId, userId: ws.userId, name: ws.userName }, ws);
 
         queueForDocument(documentId, async () => {
           const document = await Document.findById(documentId);
@@ -157,19 +145,10 @@ function setupWebSocket(server) {
 
           await OperationLog.create({ documentId, operations });
 
-          broadcastToRoom(
-            documentId,
-            { type: "crdtOps", documentId, operations },
-            ws,
-          );
+          broadcastToRoom(documentId, { type: "crdtOps", documentId, operations }, ws);
+
           if (ws.readyState === ws.OPEN) {
-            ws.send(
-              JSON.stringify({
-                type: "saved",
-                documentId,
-                savedAt: new Date().toISOString(),
-              }),
-            );
+            ws.send(JSON.stringify({ type: "saved", documentId, savedAt: new Date().toISOString() }));
           }
         });
       }
@@ -186,7 +165,7 @@ function setupWebSocket(server) {
             name: ws.userName,
             position: parsed.position,
           },
-          ws,
+          ws
         );
       }
     });

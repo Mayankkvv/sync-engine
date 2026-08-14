@@ -93,3 +93,9 @@ and logged, right after the existing broadcast to the rest of the
 room. Unlike presence/typing/crdtOps, this is sent to exactly one
 client (the sender), never broadcast, since it only has meaning to
 whoever's edit it confirms.
+
+## Authorization on join (updated)
+The join handshake now checks owner OR collaborator (previously owner
+only), matching the REST routes' access rule exactly — both entry
+points into a document's data were updated together, since either one
+alone being permissive would defeat the other's restriction.

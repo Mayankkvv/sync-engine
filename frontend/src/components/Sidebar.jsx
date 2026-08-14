@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/documents";
 
-function Sidebar({ token, selectedDocumentId, onSelectDocument, open, onClose }) {
+function normalizeId(value) {
+  if (!value) return "";
+  const id = typeof value === "object" ? value._id || value.id : value;
+  return id ? String(id) : "";
+}
+
+function Sidebar({ token, currentUserId, selectedDocumentId, onSelectDocument, open, onClose }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -151,53 +157,65 @@ function Sidebar({ token, selectedDocumentId, onSelectDocument, open, onClose })
             <p className="p-4 text-sm text-slate-400">No documents yet.</p>
           )}
 
-          {documents.map((doc) => (
-            <div
-              key={doc._id}
-              className={`group border-b border-slate-100 ${
-                doc._id === selectedDocumentId ? "bg-slate-100" : "hover:bg-slate-50"
-              }`}
-            >
-              {renamingId === doc._id ? (
-                <input
-                  autoFocus
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  onBlur={() => handleRenameSubmit(doc._id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleRenameSubmit(doc._id);
-                    if (e.key === "Escape") handleRenameCancel();
-                  }}
-                  className="w-full px-4 py-3 text-sm border-none focus:outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              ) : (
-                <div className="flex items-center px-4 py-3">
-                  <button
-                    onClick={() => handleSelect(doc._id)}
-                    className={`flex-1 text-left text-sm truncate ${
-                      doc._id === selectedDocumentId ? "text-slate-800 font-medium" : "text-slate-600"
-                    }`}
-                  >
-                    {doc.title || "Untitled Document"}
-                  </button>
-                  <div className="flex items-center gap-2 ml-2 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+          {documents.map((doc) => {
+            const isOwnedByCurrentUser =
+              typeof doc.isOwner === "boolean"
+                ? doc.isOwner
+                : normalizeId(doc.owner) === normalizeId(currentUserId);
+
+            return (
+              <div
+                key={doc._id}
+                className={`group border-b border-slate-100 ${
+                  doc._id === selectedDocumentId ? "bg-slate-100" : "hover:bg-slate-50"
+                }`}
+              >
+                {renamingId === doc._id ? (
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onBlur={() => handleRenameSubmit(doc._id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleRenameSubmit(doc._id);
+                      if (e.key === "Escape") handleRenameCancel();
+                    }}
+                    className="w-full px-4 py-3 text-sm border-none focus:outline-none focus:ring-2 focus:ring-slate-400"
+                  />
+                ) : (
+                  <div className="flex items-center px-4 py-3">
                     <button
-                      onClick={() => handleRenameStart(doc)}
-                      className="text-xs text-slate-400 hover:text-slate-700"
+                      onClick={() => handleSelect(doc._id)}
+                      className={`flex-1 text-left text-sm truncate flex items-center gap-2 ${
+                        doc._id === selectedDocumentId ? "text-slate-800 font-medium" : "text-slate-600"
+                      }`}
                     >
-                      Rename
+                      <span className="truncate">{doc.title || "Untitled Document"}</span>
+                      {!isOwnedByCurrentUser && (
+                        <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">
+                          Shared
+                        </span>
+                      )}
                     </button>
-                    <button
-                      onClick={() => handleDelete(doc._id)}
-                      className="text-xs text-slate-400 hover:text-red-500"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex items-center gap-2 ml-2 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleRenameStart(doc)}
+                        className="text-xs text-slate-400 hover:text-slate-700"
+                      >
+                        Rename
+                      </button>
+                      <button
+                        onClick={() => handleDelete(doc._id)}
+                        className="text-xs text-slate-400 hover:text-red-500"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </>

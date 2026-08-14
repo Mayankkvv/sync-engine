@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { findUserByEmail, normalizeEmail } = require("../utils/email");
 
 const router = express.Router();
 
@@ -12,18 +13,19 @@ function generateToken(userId) {
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!name || !email || !password) {
+    if (!name || !normalizedEmail || !password) {
       return res.status(400).json({ error: "Name, email, and password are all required" });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await findUserByEmail(User, normalizedEmail);
     if (existingUser) {
       return res.status(400).json({ error: "An account with this email already exists" });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, passwordHash });
+    const user = await User.create({ name, email: normalizedEmail, passwordHash });
 
     const token = generateToken(user._id);
 
@@ -40,7 +42,7 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await findUserByEmail(User, email);
     if (!user) {
       return res.status(401).json({ error: "Invalid email or password" });
     }

@@ -13,6 +13,8 @@ const mongoose = require("mongoose");
 const app = require("../app");
 
 let token;
+let otherToken;
+let otherEmail;
 
 beforeAll(async () => {
   await mongoose.connect(process.env.MONGO_TEST_URI);
@@ -49,6 +51,7 @@ describe("Document API", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.title).toBe("Test Doc");
+    expect(res.body.isOwner).toBe(true);
     documentId = res.body._id;
   });
 
@@ -59,6 +62,7 @@ describe("Document API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.some((doc) => doc._id === documentId)).toBe(true);
+    expect(res.body.find((doc) => doc._id === documentId).isOwner).toBe(true);
   });
 
   test("gets a single document by id", async () => {
@@ -68,6 +72,7 @@ describe("Document API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body._id).toBe(documentId);
+    expect(res.body.isOwner).toBe(true);
   });
 
   test("updates only the fields sent, leaving others untouched", async () => {
@@ -82,19 +87,37 @@ describe("Document API", () => {
   });
 
   test("a different user cannot access this document", async () => {
-    const otherEmail = `other-${Date.now()}@example.com`;
+    otherEmail = `other-${Date.now()}@example.com`;
     const registerRes = await request(app).post("/api/auth/register").send({
       name: "Other User",
       email: otherEmail,
       password: "password123",
     });
-    const otherToken = registerRes.body.token;
+    otherToken = registerRes.body.token;
 
     const res = await request(app)
       .get(`/api/documents/${documentId}`)
       .set("Authorization", `Bearer ${otherToken}`);
 
     expect(res.status).toBe(404);
+  });
+
+  test("owner can invite an existing user by email", async () => {
+    const res = await request(app)
+      .post(`/api/documents/${documentId}/collaborators`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ email: `  ${otherEmail.toUpperCase()}  ` });
+
+    expect(res.status).toBe(200);
+    expect(res.body.collaborators.some((user) => user.email === otherEmail)).toBe(true);
+
+    const accessRes = await request(app)
+      .get(`/api/documents/${documentId}`)
+      .set("Authorization", `Bearer ${otherToken}`);
+
+    expect(accessRes.status).toBe(200);
+    expect(accessRes.body._id).toBe(documentId);
+    expect(accessRes.body.isOwner).toBe(false);
   });
 
   test("deletes a document", async () => {

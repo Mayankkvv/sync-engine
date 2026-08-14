@@ -61,3 +61,23 @@ Now a true partial update — only fields present in the request body
 are changed. Sending { title } alone updates only the title and
 leaves content untouched.
 
+## Access levels (updated)
+Two tiers now exist per document:
+- Owner: full access, including delete and managing collaborators
+- Collaborator: can view, edit, view history, and restore — cannot
+  delete the document or manage who else has access
+
+## POST /api/documents/:id/collaborators (owner only)
+Invites an existing user by email.
+Request body: { email }
+Response: { collaborators: [{ _id, name, email }, ...] }
+Errors: 404 if no account exists with that email, 400 if inviting
+yourself or someone already added.
+
+## DELETE /api/documents/:id/collaborators/:collaboratorId (owner only)
+Removes a collaborator's access.
+Response: { message: "Collaborator removed" }
+
+## GET /api/documents/:id (updated)
+Now returns owner and collaborators populated with { _id, name,
+email } instead of raw ids.

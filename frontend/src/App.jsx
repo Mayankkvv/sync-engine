@@ -44,6 +44,8 @@ function App() {
     return <Login onLogin={handleLogin} />;
   }
 
+  const currentUserId = user?.id || user?._id;
+
   return (
     <div className="h-screen flex flex-col bg-slate-100">
       <NavBar user={user} onLogout={handleLogout} onMenuClick={() => setSidebarOpen(true)} />
@@ -51,6 +53,7 @@ function App() {
       <div className="flex-1 flex relative overflow-hidden">
         <Sidebar
           token={token}
+          currentUserId={currentUserId}
           selectedDocumentId={selectedDocumentId}
           onSelectDocument={setSelectedDocumentId}
           open={sidebarOpen}
@@ -58,7 +61,13 @@ function App() {
         />
 
         {selectedDocumentId ? (
-          <DocumentEditor key={selectedDocumentId} documentId={selectedDocumentId} token={token} userName={user.name} />
+          <DocumentEditor
+            key={selectedDocumentId}
+            documentId={selectedDocumentId}
+            token={token}
+            userName={user.name}
+            currentUserId={currentUserId}
+          />
         ) : (
           <div className="flex-1 flex items-center justify-center text-slate-400 text-sm px-4 text-center">
             Select a document from the sidebar, or create a new one.
