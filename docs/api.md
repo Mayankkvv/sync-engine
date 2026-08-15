@@ -81,3 +81,17 @@ Response: { message: "Collaborator removed" }
 ## GET /api/documents/:id (updated)
 Now returns owner and collaborators populated with { _id, name,
 email } instead of raw ids.
+
+## POST /api/auth/forgot-password
+Request body: { email }
+Always responds the same way regardless of whether the email has an
+account, to prevent discovering which emails are registered.
+Response: { message: "If an account with that email exists, a
+password reset link has been sent." }
+
+## POST /api/auth/reset-password
+Request body: { token, newPassword }
+token is the raw value from the emailed reset link (never the stored
+hash). Response: { message: "Password has been reset. You can now
+log in." }, or 400 { error: "Invalid or expired reset link" } if the
+token is wrong, already used, or expired (1 hour).

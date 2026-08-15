@@ -279,3 +279,13 @@ Added POST/DELETE /:id/collaborators to invite/remove people by email
 (invite form + people list for the owner, read-only list for
 collaborators). The document list route now returns documents you
 own or have been given access to.
+
+## Step 38: Forgot Password / Reset Password
+Added POST /api/auth/forgot-password and POST /api/auth/reset-password.
+Reset tokens are 32 random bytes, emailed to the user via Nodemailer +
+Gmail SMTP, but only a SHA-256 hash of the token is stored in MongoDB,
+with a 1-hour expiry and single-use (cleared after a successful
+reset). The forgot-password response is identical whether or not the
+email has an account, preventing enumeration. Frontend adds a
+"Forgot password?" flow in Login and a new ResetPassword screen,
+triggered by a ?resetToken= URL parameter (no routing library added).

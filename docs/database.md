@@ -56,3 +56,9 @@ Created by backend/models/User.js. Fields:
 Added "collaborators": an array of ObjectIds referencing users,
 alongside the existing single "owner". A document is accessible to
 its owner and every id in this array.
+
+### users (updated)
+Added resetPasswordTokenHash (String, SHA-256 hash of the reset
+token — never the raw token) and resetPasswordExpires (Date). Both
+are cleared back to null after a successful reset, making the token
+single-use.

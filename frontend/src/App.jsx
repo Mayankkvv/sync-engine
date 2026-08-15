@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import DocumentEditor from "./components/DocumentEditor";
 import Login from "./components/Login";
+import ResetPassword from "./components/ResetPassword";
 import NavBar from "./components/NavBar";
 
 function App() {
@@ -10,8 +11,15 @@ function App() {
   const [authLoaded, setAuthLoaded] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [resetToken, setResetToken] = useState(null);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tokenFromUrl = params.get("resetToken");
+    if (tokenFromUrl) {
+      setResetToken(tokenFromUrl);
+    }
+
     const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
     if (storedToken && storedUser) {
@@ -36,15 +44,22 @@ function App() {
     setSelectedDocumentId(null);
   }
 
+  function handleResetDone() {
+    setResetToken(null);
+    window.history.replaceState({}, "", window.location.pathname);
+  }
+
   if (!authLoaded) {
     return null;
+  }
+
+  if (resetToken) {
+    return <ResetPassword token={resetToken} onDone={handleResetDone} />;
   }
 
   if (!token) {
     return <Login onLogin={handleLogin} />;
   }
-
-  const currentUserId = user?.id || user?._id;
 
   return (
     <div className="h-screen flex flex-col bg-slate-100">
@@ -53,7 +68,7 @@ function App() {
       <div className="flex-1 flex relative overflow-hidden">
         <Sidebar
           token={token}
-          currentUserId={currentUserId}
+          currentUserId={user.id}
           selectedDocumentId={selectedDocumentId}
           onSelectDocument={setSelectedDocumentId}
           open={sidebarOpen}
@@ -66,7 +81,7 @@ function App() {
             documentId={selectedDocumentId}
             token={token}
             userName={user.name}
-            currentUserId={currentUserId}
+            currentUserId={user.id}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center text-slate-400 text-sm px-4 text-center">

@@ -350,3 +350,23 @@ explicit tiers with two separate helper functions, rather than
 relaxing a single check — so it's structurally impossible for a
 collaborator to accidentally get owner-level actions like delete,
 since those routes never call the relaxed helper at all."
+
+
+## Secure password reset flow
+
+**What it is:** forgot-password and reset-password, with a
+cryptographically random token that's hashed before storage,
+time-limited, single-use, and a request endpoint that never reveals
+whether an email has an account.
+
+**Why we built it this way:** password reset is one of the most
+commonly-implemented-insecurely features in real apps — this was a
+deliberate exercise in doing it the way a security-conscious system
+actually should, not the shortest path that merely works.
+
+**How to explain it in an interview:** "The reset token is hashed
+with SHA-256 before storage, the same principle as password hashing
+but with a fast hash instead of bcrypt, since the token itself is
+already high-entropy random data rather than something a human chose
+— using bcrypt there would just be unnecessary slowness, not
+additional real security."
